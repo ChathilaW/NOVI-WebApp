@@ -6,10 +6,11 @@ import { ReactNode, useEffect, useState } from "react"
 import { tokenProvider } from '@/actions/stream.actions';
 import Loading from "@/components/Loading";
 
+
 const API_KEY = process.env.NEXT_PUBLIC_STREAM_API_KEY;
 
-const StreamProvider = ({ children }: { children:
-ReactNode}) =>{
+
+const StreamProvider = ({ children }: { children: ReactNode }) => {
 
     const [videoClient, setVideoClient] = useState<StreamVideoClient>();
     const { user, isLoaded } = useUser();
@@ -25,14 +26,13 @@ ReactNode}) =>{
               image: user?.imageUrl,
             },
             tokenProvider,
-        });
+          });
 
-        setVideoClient(client);
+          setVideoClient(client);
           return () => {
             client.disconnectUser();
             setVideoClient(undefined);
-        };
-
+          };
     }, [user, isLoaded])
 
     if (!videoClient) return <Loading />;

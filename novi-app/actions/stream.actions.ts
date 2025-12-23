@@ -12,7 +12,7 @@ export const tokenProvider = async () => {
     if (!streamApiKey) throw new Error('Stream API key secret is missing');
     if (!streamSecretKey) throw new Error('Stream API secret is missing');
 
-    const client = new StreamClient(streamApiKey, streamApiKey);
+    const client = new StreamClient(streamApiKey, streamSecretKey);
     const userId: string = user.id;
 
     // token is valid for an hour
