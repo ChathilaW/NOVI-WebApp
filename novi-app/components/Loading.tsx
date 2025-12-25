@@ -2,7 +2,7 @@ import { ThreeDot } from "react-loading-indicators";
 
 const Loading = () => {
   return (
-    <div className="flex flex-col items-center animate-fade-in pt-16">
+    <div className="flex min-h-screen items-center justify-center animate-fade-in">
       
       <ThreeDot variant="bounce" color="#da32f8ff" size="medium" text="" textColor="" />  
 
