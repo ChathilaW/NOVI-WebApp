@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { initGaze, runGaze } from '../ml/gaze';
+import Dashboard from './Dashboard';
 
 const IndRoom = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    
+    // Gaze tracking state
+    const [gazeData, setGazeData] = useState<any>(null);
+    const [isGazeInitialized, setIsGazeInitialized] = useState(false);
+    const [showDashboard, setShowDashboard] = useState(false);
+    const animationFrameRef = useRef<number | null>(null);
 
     // Initialize media stream
     const startMediaStream = async (enableVideo: boolean, enableAudio: boolean) => {
@@ -44,6 +52,11 @@ const IndRoom = () => {
     const toggleVideo = () => {
         const newVideoState = !isVideoEnabled;
         setIsVideoEnabled(newVideoState);
+        
+        // Clear gaze data when camera is turned off
+        if (!newVideoState) {
+            setGazeData(null);
+        }
         
         if (mediaStream) {
             const videoTrack = mediaStream.getVideoTracks()[0];
@@ -90,6 +103,45 @@ const IndRoom = () => {
             videoRef.current.srcObject = mediaStream;
         }
     }, [isVideoEnabled, mediaStream]);
+
+    // Initialize gaze tracking
+    useEffect(() => {
+        const setupGaze = async () => {
+            try {
+                await initGaze();
+                setIsGazeInitialized(true);
+            } catch (err) {
+                console.error('Error initializing gaze tracking:', err);
+            }
+        };
+
+        setupGaze();
+    }, []);
+
+    // Continuous gaze detection loop
+    useEffect(() => {
+        if (!isGazeInitialized || !videoRef.current || !isVideoEnabled) {
+            return;
+        }
+
+        const detectGaze = () => {
+            if (videoRef.current && isVideoEnabled) {
+                const result = runGaze(videoRef.current);
+                if (result) {
+                    setGazeData(result);
+                }
+            }
+            animationFrameRef.current = requestAnimationFrame(detectGaze);
+        };
+
+        detectGaze();
+
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [isGazeInitialized, isVideoEnabled]);
 
     return (
         <div className="relative flex flex-col h-screen w-full bg-gray-900">
@@ -156,6 +208,7 @@ const IndRoom = () => {
 
                     {/* Dashboard Button */}
                     <button
+                        onClick={() => setShowDashboard(!showDashboard)}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 hover:scale-105 bg-gray-700 hover:bg-gray-600"
                     >
                         <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -165,6 +218,15 @@ const IndRoom = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Dashboard Overlay */}
+            {showDashboard && (
+                <Dashboard 
+                    stats={gazeData} 
+                    isVideoEnabled={isVideoEnabled}
+                    onClose={() => setShowDashboard(false)} 
+                />
+            )}
         </div>
     );
 };
