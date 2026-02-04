@@ -148,7 +148,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
     }, [isGazeInitialized, isVideoEnabled]);
 
     return (
-        <div className="relative flex flex-col h-screen w-full bg-gray-900">
+        <div className="fixed inset-0 flex flex-col w-full bg-gray-900 z-[60]">
             {/* Main Video Area */}
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="relative w-full max-w-6xl rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
