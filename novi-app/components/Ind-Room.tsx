@@ -21,6 +21,11 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
     const [isDistractionInitialized, setIsDistractionInitialized] = useState(false);
     const [showDashboard, setShowDashboard] = useState(false);
     const animationFrameRef = useRef<number | null>(null);
+    
+    // Focus tracking state
+    const [focusedCount, setFocusedCount] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
+
 
     // Initialize media stream
     const startMediaStream = async (enableVideo: boolean, enableAudio: boolean) => {
@@ -157,6 +162,14 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                     );
                     // Always update state, including error/no face states
                     setDistractionData(result);
+                    
+                    // Track focus samples (count every valid detection)
+                    if (result && (result.status === "FOCUSED" || result.status === "DISTRACTED")) {
+                        setTotalCount(prev => prev + 1);
+                        if (result.status === "FOCUSED") {
+                            setFocusedCount(prev => prev + 1);
+                        }
+                    }
                 }
             }
             animationFrameRef.current = requestAnimationFrame(detectDistract);
@@ -255,6 +268,8 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                 <Dashboard 
                     stats={distractionData} 
                     isVideoEnabled={isVideoEnabled}
+                    focusedCount={focusedCount}
+                    totalCount={totalCount}
                     onClose={() => setShowDashboard(false)} 
                 />
             )}
