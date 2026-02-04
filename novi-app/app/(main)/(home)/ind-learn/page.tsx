@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import IndSetUp from '@/components/IndSetUp';
-import IndRoom from '@/components/IndRoom';
+import IndSetUp from '@/components/Ind-SetUp';
+import IndRoom from '@/components/Ind-Room';
 
 const IndLearnPage = () => {
     const [currentView, setCurrentView] = useState<'start' | 'setup' | 'room'>('start');
