@@ -1,108 +1,61 @@
-import {
-  FaceLandmarker,
-  FilesetResolver
-} from "@mediapipe/tasks-vision";
-
-/* ------------------------------
-   Internal state
------------------------------- */
-
-let landmarker = null;
-
-/* ------------------------------
+/* ------------------------------------
    Landmark indices
------------------------------- */
-
+------------------------------------ */
 const LEFT_EYE_CORNERS = [33, 133];
 const RIGHT_EYE_CORNERS = [362, 263];
+
 const LEFT_IRIS = [468, 469, 470, 471, 472];
 const RIGHT_IRIS = [473, 474, 475, 476, 477];
 
-/* ------------------------------
-   Utils
------------------------------- */
-
-function lmPx(lm, i, w, h) {
-  return { x: lm[i].x * w, y: lm[i].y * h };
+/* ------------------------------------
+   Utilities
+------------------------------------ */
+function lmPx(landmarks, idx, w, h) {
+  return {
+    x: landmarks[idx].x * w,
+    y: landmarks[idx].y * h
+  };
 }
 
-function irisCenter(lm, ids, w, h) {
+function irisCenter(landmarks, indices, w, h) {
   let x = 0, y = 0;
-  ids.forEach(i => {
-    const p = lmPx(lm, i, w, h);
+  indices.forEach(i => {
+    const p = lmPx(landmarks, i, w, h);
     x += p.x;
     y += p.y;
   });
-  return { x: x / ids.length, y: y / ids.length };
+  return { x: x / indices.length, y: y / indices.length };
 }
 
-/* ------------------------------
-   Init MediaPipe
------------------------------- */
+/* ------------------------------------
+   Public API
+------------------------------------ */
+export function updateGaze(landmarks, w, h) {
+  const leftOuter = lmPx(landmarks, LEFT_EYE_CORNERS[0], w, h);
+  const leftInner = lmPx(landmarks, LEFT_EYE_CORNERS[1], w, h);
 
-export async function initGaze() {
-  if (landmarker) return landmarker;
+  const rightOuter = lmPx(landmarks, RIGHT_EYE_CORNERS[0], w, h);
+  const rightInner = lmPx(landmarks, RIGHT_EYE_CORNERS[1], w, h);
 
-  const fileset = await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.32/wasm"
-  );
+  const leftIris = irisCenter(landmarks, LEFT_IRIS, w, h);
+  const rightIris = irisCenter(landmarks, RIGHT_IRIS, w, h);
 
-  landmarker = await FaceLandmarker.createFromOptions(fileset, {
-    baseOptions: {
-      modelAssetPath: "/assets/ml-models/face_landmarker.task"
-    },
-    runningMode: "VIDEO",
-    numFaces: 1
-  });
+  const horizontalRatio =
+    ((leftIris.x - leftOuter.x) / (leftInner.x - leftOuter.x) +
+     (rightIris.x - rightOuter.x) / (rightInner.x - rightOuter.x)) / 2;
 
-  return landmarker;
-}
+  const leftEyeCenterY = (leftOuter.y + leftInner.y) / 2;
+  const rightEyeCenterY = (rightOuter.y + rightInner.y) / 2;
 
-/* ------------------------------
-   Run gaze per frame
------------------------------- */
+  const verticalRatio =
+    ((leftIris.y - leftEyeCenterY) +
+     (rightIris.y - rightEyeCenterY)) / 2 / h;
 
-export function runGaze(video) {
-  if (!landmarker || video.readyState < 2) return null;
+  let gaze = "CENTER";
+  if (horizontalRatio < 0.42) gaze = "RIGHT";
+  else if (horizontalRatio > 0.70) gaze = "LEFT";
+  else if (verticalRatio < -0.0075) gaze = "UP";
+  else if (verticalRatio > 0.0) gaze = "DOWN";
 
-  try {
-    const res = landmarker.detectForVideo(video, performance.now());
-    if (!res.faceLandmarks?.length) return null;
-
-    const lm = res.faceLandmarks[0];
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-
-    const lO = lmPx(lm, LEFT_EYE_CORNERS[0], w, h);
-    const lI = lmPx(lm, LEFT_EYE_CORNERS[1], w, h);
-    const rO = lmPx(lm, RIGHT_EYE_CORNERS[0], w, h);
-    const rI = lmPx(lm, RIGHT_EYE_CORNERS[1], w, h);
-
-    const lIris = irisCenter(lm, LEFT_IRIS, w, h);
-    const rIris = irisCenter(lm, RIGHT_IRIS, w, h);
-
-    const hRatio =
-      ((lIris.x - lO.x) / (lI.x - lO.x) +
-        (rIris.x - rO.x) / (rI.x - rO.x)) / 2;
-
-    const vRatio =
-      ((lIris.y - (lO.y + lI.y) / 2) +
-        (rIris.y - (rO.y + rI.y) / 2)) / 2 / h;
-
-    let gaze = "CENTER";
-    if (hRatio < 0.42) gaze = "RIGHT";
-    else if (hRatio > 0.7) gaze = "LEFT";
-    else if (vRatio < -0.0075) gaze = "UP";
-    else if (vRatio > 0.0) gaze = "DOWN";
-
-    return {
-      gaze,
-      horizontalRatio: hRatio,
-      verticalRatio: vRatio,
-      timestamp: Date.now()
-    };
-  } catch (err) {
-    // Silently ignore errors (e.g., video not fully ready yet)
-    return null;
-  }
+  return { gaze, horizontalRatio, verticalRatio };
 }

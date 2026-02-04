@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { initGaze, runGaze } from '../ml/gaze';
+import { initDistraction, detectDistraction } from '../ml/combined';
 import Dashboard from './Dashboard';
 import IndEndCallButton from './Ind-EndCallButton';
 
@@ -16,9 +16,9 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
     const [isVideoEnabled, setIsVideoEnabled] = useState(initialVideoEnabled);
     const [isAudioEnabled, setIsAudioEnabled] = useState(initialAudioEnabled);
     
-    // Gaze tracking state
-    const [gazeData, setGazeData] = useState<any>(null);
-    const [isGazeInitialized, setIsGazeInitialized] = useState(false);
+    // Distraction detection state
+    const [distractionData, setDistractionData] = useState<any>(null);
+    const [isDistractionInitialized, setIsDistractionInitialized] = useState(false);
     const [showDashboard, setShowDashboard] = useState(false);
     const animationFrameRef = useRef<number | null>(null);
 
@@ -59,9 +59,9 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
         const newVideoState = !isVideoEnabled;
         setIsVideoEnabled(newVideoState);
         
-        // Clear gaze data when camera is turned off
+        // Clear distraction data when camera is turned off
         if (!newVideoState) {
-            setGazeData(null);
+            setDistractionData(null);
         }
         
         if (mediaStream) {
@@ -96,7 +96,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
         }
-        // Cancel gaze detection animation frame
+        // Cancel distraction detection animation frame
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
         }
@@ -122,43 +122,54 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
         }
     }, [isVideoEnabled, mediaStream]);
 
-    // Initialize gaze tracking
+    // Initialize distraction detection
     useEffect(() => {
-        const setupGaze = async () => {
+        const setupDistraction = async () => {
             try {
-                await initGaze();
-                setIsGazeInitialized(true);
+                await initDistraction();
+                setIsDistractionInitialized(true);
             } catch (err) {
-                console.error('Error initializing gaze tracking:', err);
+                console.error('Error initializing distraction detection:', err);
             }
         };
 
-        setupGaze();
+        setupDistraction();
     }, []);
 
-    // Continuous gaze detection loop
+    // Continuous distraction detection loop
     useEffect(() => {
-        if (!isGazeInitialized || !videoRef.current || !isVideoEnabled) {
+        if (!isDistractionInitialized || !videoRef.current || !isVideoEnabled) {
             return;
         }
 
-        const detectGaze = () => {
+        const detectDistract = () => {
             if (videoRef.current && isVideoEnabled) {
-                const result = runGaze(videoRef.current);
-                // Always update state, including null when no face detected
-                setGazeData(result);
+                const width = videoRef.current.videoWidth;
+                const height = videoRef.current.videoHeight;
+                
+                // Only run detection if video dimensions are valid
+                if (width > 0 && height > 0) {
+                    const result = detectDistraction(
+                        videoRef.current,
+                        width,
+                        height,
+                        performance.now()
+                    );
+                    // Always update state, including error/no face states
+                    setDistractionData(result);
+                }
             }
-            animationFrameRef.current = requestAnimationFrame(detectGaze);
+            animationFrameRef.current = requestAnimationFrame(detectDistract);
         };
 
-        detectGaze();
+        detectDistract();
 
         return () => {
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [isGazeInitialized, isVideoEnabled]);
+    }, [isDistractionInitialized, isVideoEnabled]);
 
     return (
         <div className="fixed inset-0 flex flex-col w-full bg-gray-900 z-[60]">
@@ -242,7 +253,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
             {/* Dashboard Overlay */}
             {showDashboard && (
                 <Dashboard 
-                    stats={gazeData} 
+                    stats={distractionData} 
                     isVideoEnabled={isVideoEnabled}
                     onClose={() => setShowDashboard(false)} 
                 />
