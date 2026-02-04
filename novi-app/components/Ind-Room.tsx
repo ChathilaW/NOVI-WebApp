@@ -127,9 +127,8 @@ const IndRoom = () => {
         const detectGaze = () => {
             if (videoRef.current && isVideoEnabled) {
                 const result = runGaze(videoRef.current);
-                if (result) {
-                    setGazeData(result);
-                }
+                // Always update state, including null when no face detected
+                setGazeData(result);
             }
             animationFrameRef.current = requestAnimationFrame(detectGaze);
         };
