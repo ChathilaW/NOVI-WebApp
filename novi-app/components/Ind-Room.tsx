@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { initGaze, runGaze } from '../ml/gaze';
 import Dashboard from './Dashboard';
+import IndEndCallButton from './Ind-EndCallButton';
 
 interface IndRoomProps {
     initialVideoEnabled?: boolean;
@@ -86,6 +87,18 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
             if (audioTrack) {
                 audioTrack.enabled = newAudioState;
             }
+        }
+    };
+
+    // Handle end session - cleanup and close
+    const handleEndCall = () => {
+        // Stop all media tracks
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        // Cancel gaze detection animation frame
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
         }
     };
 
@@ -220,6 +233,9 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                         </svg>
                         <span className="text-white text-sm font-medium">Dashboard</span>
                     </button>
+
+                    {/* End Session Button */}
+                    <IndEndCallButton onEndCall={handleEndCall} />
                 </div>
             </div>
 
