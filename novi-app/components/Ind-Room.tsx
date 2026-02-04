@@ -4,11 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import { initGaze, runGaze } from '../ml/gaze';
 import Dashboard from './Dashboard';
 
-const IndRoom = () => {
+interface IndRoomProps {
+    initialVideoEnabled?: boolean;
+    initialAudioEnabled?: boolean;
+}
+
+const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: IndRoomProps = {}) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [isVideoEnabled, setIsVideoEnabled] = useState(initialVideoEnabled);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(initialAudioEnabled);
     
     // Gaze tracking state
     const [gazeData, setGazeData] = useState<any>(null);

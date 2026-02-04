@@ -4,13 +4,21 @@ import { useState, useEffect, useRef } from 'react';
 
 interface IndSetUpProps {
     onJoinRoom: () => void;
+    isVideoEnabled: boolean;
+    setIsVideoEnabled: (enabled: boolean) => void;
+    isAudioEnabled: boolean;
+    setIsAudioEnabled: (enabled: boolean) => void;
 }
 
-const IndSetUp = ({ onJoinRoom }: IndSetUpProps) => {
+const IndSetUp = ({ 
+    onJoinRoom, 
+    isVideoEnabled, 
+    setIsVideoEnabled, 
+    isAudioEnabled, 
+    setIsAudioEnabled 
+}: IndSetUpProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-    const [isVideoEnabled, setIsVideoEnabled] = useState(false);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
     const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
     const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
     const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('');
