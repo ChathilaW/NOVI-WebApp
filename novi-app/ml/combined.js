@@ -65,6 +65,8 @@ export function detectDistraction(video, width, height, timestamp) {
 
     // Step 2: If user is focused, also detect gaze
     let gazeResult = null;
+    let finalStatus = headResult.status;
+    
     if (headResult.status === "FOCUSED" && faceLandmarker) {
       const faceDetection = faceLandmarker.detectForVideo(video, timestamp);
       if (faceDetection.faceLandmarks?.length) {
@@ -73,12 +75,17 @@ export function detectDistraction(video, width, height, timestamp) {
           width,
           height
         );
+        
+        // If gaze is not CENTER, mark as DISTRACTED
+        if (gazeResult && gazeResult.gaze !== "CENTER") {
+          finalStatus = "DISTRACTED";
+        }
       }
     }
 
     // Return combined results
     return {
-      status: headResult.status, // "FOCUSED" or "DISTRACTED"
+      status: finalStatus, // "FOCUSED" (head + gaze centered), "DISTRACTED" (head or gaze off), or from headResult
       headPosture: {
         yaw: headResult.yaw,
         pitch: headResult.pitch
