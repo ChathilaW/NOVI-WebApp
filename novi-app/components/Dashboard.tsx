@@ -14,8 +14,21 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
   // Calculate focus percentage
   const focusPercentage = totalCount > 0 ? (focusedCount / totalCount) * 100 : 0;
 
+  // Helper function to determine head direction based on yaw and pitch
+  const getHeadDirection = (yaw: number, pitch: number): string => {
+    const YAW_THRESHOLD = 5.0;
+    const PITCH_LOW_THRESHOLD = 6.5;
+    const PITCH_HIGH_THRESHOLD = 18.0;
+
+    if (yaw < -YAW_THRESHOLD) return "LEFT";
+    if (yaw > YAW_THRESHOLD) return "RIGHT";
+    if (pitch < PITCH_LOW_THRESHOLD) return "UP";
+    if (pitch > PITCH_HIGH_THRESHOLD) return "DOWN";
+    return "CENTER";
+  };
+
   return (
-    <div className="absolute right-6 bottom-24 w-80 bg-gray-900 border border-gray-700 rounded-xl p-4 shadow-xl z-50">
+    <div className="w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-4">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-white font-semibold">Distraction Detection</h3>
         <button 
@@ -55,18 +68,35 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
             </span>
           </div>
 
-          {/* Head Posture */}
+          {/* Head Direction */}
           {stats.headPosture && (
             <div className="border-t border-gray-700 pt-2">
-              <p className="text-gray-400 mb-1">Head Position:</p>
-              <div className="grid grid-cols-2 gap-2">
+              <p className="text-gray-400 mb-1">Head Direction:</p>
+              <div className="bg-gray-800 rounded p-2">
+                <p className={`font-semibold text-center ${
+                  getHeadDirection(stats.headPosture.yaw, stats.headPosture.pitch) === "CENTER"
+                    ? "text-green-400"
+                    : "text-red-400"
+                }`}>
+                  {getHeadDirection(stats.headPosture.yaw, stats.headPosture.pitch)}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="bg-gray-800 rounded p-2">
+                  <p className="text-gray-500 text-xs">Horizontal</p>
+                  <p className="text-white font-mono text-xs">{stats.headPosture.yaw?.toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-800 rounded p-2">
+                  <p className="text-gray-500 text-xs">Vertical</p>
+                  <p className="text-white font-mono text-xs">{stats.headPosture.pitch?.toFixed(2)}</p>
+                </div>
                 <div className="bg-gray-800 rounded p-2">
                   <p className="text-gray-500 text-xs">Yaw</p>
-                  <p className="text-white font-mono">{stats.headPosture.yaw?.toFixed(1)}°</p>
+                  <p className="text-white font-mono text-xs">{stats.headPosture.yaw?.toFixed(1)}°</p>
                 </div>
                 <div className="bg-gray-800 rounded p-2">
                   <p className="text-gray-500 text-xs">Pitch</p>
-                  <p className="text-white font-mono">{stats.headPosture.pitch?.toFixed(1)}°</p>
+                  <p className="text-white font-mono text-xs">{stats.headPosture.pitch?.toFixed(1)}°</p>
                 </div>
               </div>
             </div>
@@ -77,7 +107,11 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
             <div className="border-t border-gray-700 pt-2">
               <p className="text-gray-400 mb-1">Gaze Direction:</p>
               <div className="bg-gray-800 rounded p-2">
-                <p className="text-white font-semibold text-center">{stats.gaze.gaze}</p>
+                <p className={`font-semibold text-center ${
+                  stats.gaze.gaze === "CENTER" ? "text-green-400" : "text-red-400"
+                }`}>
+                  {stats.gaze.gaze}
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <div className="bg-gray-800 rounded p-2">

@@ -38,7 +38,6 @@ export default function Speedometer({ percentage }: SpeedometerProps) {
           strokeWidth="20"
           strokeLinecap="round"
           strokeDasharray={`${(clampedPercentage / 100) * 251.2} 251.2`}
-          className="transition-all duration-500"
         />
         
         {/* Center dot */}
@@ -54,7 +53,6 @@ export default function Speedometer({ percentage }: SpeedometerProps) {
           strokeWidth="3"
           strokeLinecap="round"
           transform={`rotate(${needleAngle} 100 100)`}
-          className="transition-all duration-500"
         />
         
         {/* Needle cap */}

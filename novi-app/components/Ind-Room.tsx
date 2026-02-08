@@ -186,30 +186,48 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
 
     return (
         <div className="fixed inset-0 flex flex-col w-full bg-gray-900 z-[60]">
-            {/* Main Video Area */}
-            <div className="flex-1 flex items-center justify-center p-4">
-                <div className="relative w-full max-w-6xl rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
-                    {isVideoEnabled ? (
-                        <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            muted
-                            className="w-full h-full object-cover bg-gray-800"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                            <div className="text-center">
-                                <div className="w-24 h-24 mx-auto mb-4 bg-gray-700 rounded-full flex items-center justify-center">
-                                    <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                    </svg>
+            {/* Main Content Area - Video and Dashboard */}
+            <div className="flex-1 flex items-center justify-center p-4 pb-30 gap-4">
+                {/* Video Container */}
+                <div className={`flex items-center justify-center transition-all duration-300 ${
+                    showDashboard ? 'w-[65%]' : 'w-full'
+                }`}>
+                    <div className="relative w-full max-w-6xl rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
+                        {isVideoEnabled ? (
+                            <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-full object-cover bg-gray-800"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                                <div className="text-center">
+                                    <div className="w-24 h-24 mx-auto mb-4 bg-gray-700 rounded-full flex items-center justify-center">
+                                        <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-white text-lg">Camera is off</p>
                                 </div>
-                                <p className="text-white text-lg">Camera is off</p>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
+
+                {/* Dashboard Panel */}
+                {showDashboard && (
+                    <div className="flex items-start justify-center">
+                        <Dashboard 
+                            stats={distractionData} 
+                            isVideoEnabled={isVideoEnabled}
+                            focusedCount={focusedCount}
+                            totalCount={totalCount}
+                            onClose={() => setShowDashboard(false)} 
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Bottom Navbar */}
@@ -262,17 +280,6 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                     <IndEndCallButton onEndCall={handleEndCall} />
                 </div>
             </div>
-
-            {/* Dashboard Overlay */}
-            {showDashboard && (
-                <Dashboard 
-                    stats={distractionData} 
-                    isVideoEnabled={isVideoEnabled}
-                    focusedCount={focusedCount}
-                    totalCount={totalCount}
-                    onClose={() => setShowDashboard(false)} 
-                />
-            )}
         </div>
     );
 };
