@@ -20,8 +20,8 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
     const PITCH_LOW_THRESHOLD = 6.5;
     const PITCH_HIGH_THRESHOLD = 18.0;
 
-    if (yaw < -YAW_THRESHOLD) return "LEFT";
-    if (yaw > YAW_THRESHOLD) return "RIGHT";
+    if (yaw < -YAW_THRESHOLD) return "RIGHT";
+    if (yaw > YAW_THRESHOLD) return "LEFT";
     if (pitch < PITCH_LOW_THRESHOLD) return "UP";
     if (pitch > PITCH_HIGH_THRESHOLD) return "DOWN";
     return "CENTER";
