@@ -28,7 +28,7 @@ export default function GroupDashboard({ meetingId, isOpen, onClose }: Props) {
   return (
     <div
       className="
-        flex flex-col
+        flex flex-col h-full
         w-72 flex-shrink-0
         bg-gray-900/95 backdrop-blur-md
         rounded-2xl

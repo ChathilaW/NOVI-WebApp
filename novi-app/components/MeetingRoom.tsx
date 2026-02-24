@@ -98,22 +98,26 @@ const MeetingRoom = () => {
 
       <div className="relative flex size-full items-center justify-center">
         {/* Video layout */}
-        <div className="flex size-full max-w-[1000px] items-center animate-fade-in">
+        <div className="flex flex-1 min-w-0 items-center animate-fade-in mb-20">
           <CallLayout />
         </div>
 
         {/* Participants sidebar */}
         <div
-          className={cn("h-[calc(100vh-86px)] hidden ml-2", {
+          className={cn("h-[calc(100vh-250px)] hidden ml-2", {
             "show-block": showParticipants,
           })}
         >
           <CallParticipantsList onClose={() => setShowParticipants(false)} />
         </div>
 
-        {/* Group Dashboard sidebar — host only */}
+        {/* Group Dashboard sidebar — host only, same layout as participants panel */}
         {isMeetingOwner && (
-          <div className="absolute right-4 top-4">
+          <div
+            className={cn("h-[calc(100vh-250px)] hidden ml-2 mr-0", {
+              "show-block": showGroupDashboard,
+            })}
+          >
             <GroupDashboard
               meetingId={call.id}
               isOpen={showGroupDashboard}
