@@ -1,7 +1,6 @@
-'use client';
+'use client'
 
 import Speedometer from './Speedometer';
-
 type Props = {
   stats: any;
   isVideoEnabled: boolean;
@@ -14,7 +13,7 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
   // Calculate focus percentage
   const focusPercentage = totalCount > 0 ? (focusedCount / totalCount) * 100 : 0;
 
-  // Helper function to determine head direction based on yaw and pitch
+   // Helper function to determine head direction based on yaw and pitch
   const getHeadDirection = (yaw: number, pitch: number): string => {
     const YAW_THRESHOLD = 5.0;
     const PITCH_LOW_THRESHOLD = 6.5;
@@ -32,13 +31,11 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-white font-semibold">Distraction Detection</h3>
         <button 
-          onClick={onClose}
-          className="text-gray-400 hover:text-white"
-        >
+          onClick={onClose} 
+          className="text-gray-400 hover:text-white">
           ✕
         </button>
       </div>
-
       {/* Speedometer */}
       <Speedometer percentage={focusPercentage} />
 
@@ -46,6 +43,7 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
       <div className="border-t border-gray-700 my-3"></div>
 
       {/* Current Status */}
+
       {!isVideoEnabled ? (
         <p className="text-gray-400 text-sm">Camera turned off</p>
       ) : !stats || stats === null ? (
@@ -81,24 +79,7 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
                   {getHeadDirection(stats.headPosture.yaw, stats.headPosture.pitch)}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div className="bg-gray-800 rounded p-2">
-                  <p className="text-gray-500 text-xs">Horizontal</p>
-                  <p className="text-white font-mono text-xs">{stats.headPosture.yaw?.toFixed(2)}</p>
-                </div>
-                <div className="bg-gray-800 rounded p-2">
-                  <p className="text-gray-500 text-xs">Vertical</p>
-                  <p className="text-white font-mono text-xs">{stats.headPosture.pitch?.toFixed(2)}</p>
-                </div>
-                <div className="bg-gray-800 rounded p-2">
-                  <p className="text-gray-500 text-xs">Yaw</p>
-                  <p className="text-white font-mono text-xs">{stats.headPosture.yaw?.toFixed(1)}°</p>
-                </div>
-                <div className="bg-gray-800 rounded p-2">
-                  <p className="text-gray-500 text-xs">Pitch</p>
-                  <p className="text-white font-mono text-xs">{stats.headPosture.pitch?.toFixed(1)}°</p>
-                </div>
-              </div>
+              
             </div>
           )}
 
