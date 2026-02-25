@@ -27,7 +27,7 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
   };
 
   return (
-    <div className="w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-4">
+    <div className="w-80 bg-gray-900 border border-gray-700 rounded-2xl p-4">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-white font-semibold">Distraction Detection</h3>
         <button 
@@ -79,7 +79,16 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
                   {getHeadDirection(stats.headPosture.yaw, stats.headPosture.pitch)}
                 </p>
               </div>
-              
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="bg-gray-800 rounded p-2">
+                  <p className="text-gray-500 text-xs">Yaw</p>
+                  <p className="text-white font-mono text-xs">{stats.headPosture.yaw?.toFixed(1)}°</p>
+                </div>
+                <div className="bg-gray-800 rounded p-2">
+                  <p className="text-gray-500 text-xs">Pitch</p>
+                   <p className="text-white font-mono text-xs">{stats.headPosture.pitch?.toFixed(1)}°</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -93,16 +102,6 @@ export default function Dashboard({ stats, isVideoEnabled, focusedCount, totalCo
                 }`}>
                   {stats.gaze.gaze}
                 </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div className="bg-gray-800 rounded p-2">
-                  <p className="text-gray-500 text-xs">Horizontal</p>
-                  <p className="text-white font-mono text-xs">{stats.gaze.horizontalRatio?.toFixed(2)}</p>
-                </div>
-                <div className="bg-gray-800 rounded p-2">
-                  <p className="text-gray-500 text-xs">Vertical</p>
-                  <p className="text-white font-mono text-xs">{stats.gaze.verticalRatio?.toFixed(4)}</p>
-                </div>
               </div>
             </div>
           )}
