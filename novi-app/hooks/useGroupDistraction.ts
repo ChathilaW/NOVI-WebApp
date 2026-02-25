@@ -28,7 +28,7 @@ const HOLD_STALE_MS = 3000 // hold last-known data for 3s before dropping a part
  * HOLD_STALE_MS before removing them. This eliminates the UI flicker caused
  * by multi-instance serverless state gaps.
  */
-const useGroupDistraction = (meetingId: string): GroupDistractionData => {
+const useGroupDistraction = (meetingId: string, hostUserId?: string): GroupDistractionData => {
   const [data, setData] = useState<GroupDistractionData>({
     distractedCount: 0,
     totalCount: 0,
@@ -61,18 +61,26 @@ const useGroupDistraction = (meetingId: string): GroupDistractionData => {
         }
       }
 
-      // Rebuild merged participant list from the known map
-      const merged = Array.from(knownRef.current.values()).map((e) => e.stat)
+      // Rebuild merged participant list from the known map, excluding the host
+      const merged = Array.from(knownRef.current.values())
+        .map((e) => e.stat)
+        .filter((p) => !hostUserId || p.participantId !== hostUserId)
+
+      // Recompute counts from the filtered (host-excluded) list
+      let distractedCount = 0
+      for (const p of merged) {
+        if (p.distractionPct >= 50) distractedCount++
+      }
 
       setData({
-        distractedCount: json.distractedCount ?? 0,
-        totalCount: json.totalCount ?? 0,
+        distractedCount,
+        totalCount: merged.length,
         participants: merged,
       })
     } catch {
       // ignore — keep showing last known values
     }
-  }, [meetingId])
+  }, [meetingId, hostUserId])
 
   useEffect(() => {
     fetchData()

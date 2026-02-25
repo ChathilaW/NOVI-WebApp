@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface UseDistractionDetectionOptions {
   videoStream: MediaStream | null | undefined
@@ -30,6 +30,11 @@ const useDistractionDetection = ({
   name,
   isCameraOn,
 }: UseDistractionDetectionOptions) => {
+  // Exposed state so consumers can render the participant's own dashboard
+  const [stats, setStats] = useState<any>(null)
+  const [focusedCount, setFocusedCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+
   const rafRef = useRef<number | null>(null)
   const lastPostRef = useRef<number>(0)
   const initializedRef = useRef(false)
@@ -129,6 +134,9 @@ const useDistractionDetection = ({
       ) {
         const result = detectRef.current(video, video.videoWidth, video.videoHeight, timestamp)
 
+          // Expose the raw detection result for the participant dashboard
+          setStats(result)
+
         if (result && timestamp - lastPostRef.current > 200) {
           lastPostRef.current = timestamp
 
@@ -154,6 +162,10 @@ const useDistractionDetection = ({
           if (status === 'FOCUSED' || status === 'DISTRACTED') {
             totalChecksRef.current += 1
             if (status === 'DISTRACTED') distractedChecksRef.current += 1
+
+            // Mirror to React state for consumer components
+            setTotalCount(totalChecksRef.current)
+            setFocusedCount(totalChecksRef.current - distractedChecksRef.current)
           }
 
           const total = totalChecksRef.current
@@ -190,6 +202,8 @@ const useDistractionDetection = ({
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
   }, [isCameraOn, meetingId, participantId, name])
+
+  return { stats, focusedCount, totalCount }
 }
 
 export default useDistractionDetection

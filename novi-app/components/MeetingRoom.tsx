@@ -28,6 +28,7 @@ import { ChartBarIcon } from "@heroicons/react/24/solid";
 import { LayoutList, Users } from "lucide-react";
 import EndCallButton from "./EndCallButton";
 import GroupDashboard from "./group-meeting/Group-Dashboard";
+import Dashboard from "./Dashboard";
 import useDistractionDetection from "@/hooks/useDistractionDetection";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right";
@@ -35,7 +36,7 @@ type CallLayoutType = "grid" | "speaker-left" | "speaker-right";
 const MeetingRoom = () => {
   const [layout, setLayout] = useState<CallLayoutType>("speaker-left");
   const [showParticipants, setShowParticipants] = useState(false);
-  const [showGroupDashboard, setShowGroupDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useUser();
@@ -58,7 +59,7 @@ const MeetingRoom = () => {
     localParticipant.userId === call.state.createdBy.id;
 
   // Run distraction detection on raw camera stream and push metrics to Supabase
-  useDistractionDetection({
+  const { stats, focusedCount, totalCount } = useDistractionDetection({
     videoStream: cameraMediaStream,
     meetingId: call.id,
     participantId: user?.id ?? "",
@@ -106,20 +107,31 @@ const MeetingRoom = () => {
           <CallParticipantsList onClose={() => setShowParticipants(false)} />
         </div>
 
-        {/* Group Dashboard sidebar — host only, same layout as participants panel */}
-        {isMeetingOwner && (
-          <div
-            className={cn("h-[calc(100vh-250px)] hidden ml-2 mr-0", {
-              "show-block": showGroupDashboard,
-            })}
-          >
+        {/* Dashboard sidebar — host sees Group Dashboard, participants see individual Dashboard */}
+        <div
+          className={cn("h-[calc(100vh-250px)] hidden ml-2 mr-0", {
+            "show-block": showDashboard,
+          })}
+        >
+          {isMeetingOwner ? (
             <GroupDashboard
               meetingId={call.id}
-              isOpen={showGroupDashboard}
-              onClose={() => setShowGroupDashboard(false)}
+              hostUserId={call.state.createdBy?.id}
+              isOpen={showDashboard}
+              onClose={() => setShowDashboard(false)}
             />
-          </div>
-        )}
+          ) : (
+            showDashboard && (
+              <Dashboard
+                stats={stats}
+                isVideoEnabled={!isCameraOff}
+                focusedCount={focusedCount}
+                totalCount={totalCount}
+                onClose={() => setShowDashboard(false)}
+              />
+            )
+          )}
+        </div>
       </div>
 
       {/* Call controls */}
@@ -154,24 +166,22 @@ const MeetingRoom = () => {
           </div>
         </button>
 
-        {/* Group Dashboard toggle — host only */}
-        {isMeetingOwner && (
-          <button
-            onClick={() => setShowGroupDashboard((prev) => !prev)}
-            title="Group Dashboard"
+        {/* Dashboard toggle — available to all participants */}
+        <button
+          onClick={() => setShowDashboard((prev) => !prev)}
+          title="Dashboard"
+        >
+          <div
+            className={cn(
+              "cursor-pointer rounded-2xl px-4 py-2 transition-colors",
+              showDashboard
+                ? "bg-purple-600 hover:bg-purple-700"
+                : "bg-[#19232d] hover:bg-[#4c535b]"
+            )}
           >
-            <div
-              className={cn(
-                "cursor-pointer rounded-2xl px-4 py-2 transition-colors",
-                showGroupDashboard
-                  ? "bg-purple-600 hover:bg-purple-700"
-                  : "bg-[#19232d] hover:bg-[#4c535b]"
-              )}
-            >
-              <ChartBarIcon className="w-5 h-5 text-white" />
-            </div>
-          </button>
-        )}
+            <ChartBarIcon className="w-5 h-5 text-white" />
+          </div>
+        </button>
 
         <EndCallButton />
       </div>
