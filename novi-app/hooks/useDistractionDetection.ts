@@ -97,10 +97,20 @@ const useDistractionDetection = ({
       videoElRef.current = el
     }
     const el = videoElRef.current
-    el.srcObject = videoStream ?? null
+
+    // Clone the stream so Stream.io keeps its own reference undisturbed
     if (videoStream) {
-      // Explicitly start playback — detached video elements don't autoplay reliably
+      const cloned = videoStream.clone()
+      el.srcObject = cloned
       el.play().catch(() => {})
+
+      // Clean up the cloned stream on unmount / stream change
+      return () => {
+        cloned.getTracks().forEach((t) => t.stop())
+        el.srcObject = null
+      }
+    } else {
+      el.srcObject = null
     }
   }, [videoStream])
 

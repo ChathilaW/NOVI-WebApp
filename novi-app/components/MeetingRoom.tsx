@@ -69,17 +69,6 @@ const MeetingRoom = () => {
   if (!user) return null;
   if (callingState !== CallingState.JOINED) return <Loading />;
 
-  const CallLayout = () => {
-    switch (layout) {
-      case "grid":
-        return <PaginatedGridLayout />;
-      case "speaker-right":
-        return <SpeakerLayout participantsBarPosition="left" />;
-      default:
-        return <SpeakerLayout participantsBarPosition="right" />;
-    }
-  };
-
   return (
     <section className="relative h-screen w-full overflow-hidden pt-4 text-white">
       <Button
@@ -97,9 +86,15 @@ const MeetingRoom = () => {
       </Button>
 
       <div className="relative flex size-full items-center justify-center">
-        {/* Video layout */}
+        {/* Video layout — rendered inline to avoid remounting on re-renders */}
         <div className="flex flex-1 min-w-0 items-center animate-fade-in mb-20">
-          <CallLayout />
+          {layout === "grid" ? (
+            <PaginatedGridLayout />
+          ) : layout === "speaker-right" ? (
+            <SpeakerLayout participantsBarPosition="left" />
+          ) : (
+            <SpeakerLayout participantsBarPosition="right" />
+          )}
         </div>
 
         {/* Participants sidebar */}
