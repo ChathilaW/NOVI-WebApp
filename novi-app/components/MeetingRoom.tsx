@@ -116,6 +116,7 @@ const MeetingRoom = () => {
           {isMeetingOwner ? (
             <GroupDashboard
               meetingId={call.id}
+              hostUserId={call.state.createdBy?.id}
               isOpen={showDashboard}
               onClose={() => setShowDashboard(false)}
             />
