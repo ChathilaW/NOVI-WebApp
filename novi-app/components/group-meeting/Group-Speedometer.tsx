@@ -3,14 +3,14 @@
 import ReactSpeedometer from 'react-d3-speedometer';
 
 type SpeedometerProps = {
+  averageDistractionPct: number;
   distractedCount: number;
   totalCount: number;
 };
 
-export default function GroupSpeedometer({ distractedCount, totalCount }: SpeedometerProps) {
-  // Distraction percentage: 0 = nobody distracted, 100 = everyone distracted
-  const distractionPct = totalCount > 0 ? (distractedCount / totalCount) * 100 : 0;
-  const clamped = Math.max(0, Math.min(100, distractionPct));
+export default function GroupSpeedometer({ averageDistractionPct, distractedCount, totalCount }: SpeedometerProps) {
+  // Distraction percentage: average of all participants
+  const clamped = Math.max(0, Math.min(100, averageDistractionPct));
 
   // Color: green (low distraction) → yellow → red (high distraction)
   const getColor = (pct: number) => {

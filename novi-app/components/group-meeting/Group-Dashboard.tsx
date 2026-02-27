@@ -66,6 +66,11 @@ export default function GroupDashboard({ meetingId, hostUserId, isOpen, onClose 
             </div>
           ) : (
             <GroupSpeedometer
+              averageDistractionPct={
+                totalCount > 0
+                  ? participants.reduce((sum, p) => sum + p.distractionPct, 0) / totalCount
+                  : 0
+              }
               distractedCount={distractedCount}
               totalCount={totalCount}
             />
