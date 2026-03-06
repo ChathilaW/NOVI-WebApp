@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { initDistraction, detectDistraction } from '../ml/combined';
-import Dashboard from './Dashboard';
+import { initDistraction, detectDistraction } from '@/ml/combined';
+import Dashboard from './Ind-Dashboard';
 import IndEndCallButton from './Ind-EndCallButton';
+import { UserIcon, VideoCameraIcon, VideoCameraSlashIcon, MicrophoneIcon, ChartBarIcon } from '@heroicons/react/24/solid';
 
 interface IndRoomProps {
     initialVideoEnabled?: boolean;
@@ -205,9 +206,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                             <div className="w-full h-full flex items-center justify-center bg-gray-800">
                                 <div className="text-center">
                                     <div className="w-24 h-24 mx-auto mb-4 bg-gray-700 rounded-full flex items-center justify-center">
-                                        <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                        </svg>
+                                        <UserIcon className="w-12 h-12 text-gray-400" />
                                     </div>
                                     <p className="text-white text-lg">Camera is off</p>
                                 </div>
@@ -239,13 +238,11 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                         className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 hover:scale-105"
                         style={{ backgroundColor: isVideoEnabled ? '#C8A2E0' : '#ef4444' }}
                     >
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            {isVideoEnabled ? (
-                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                            ) : (
-                                <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A1.999 1.999 0 0018 13V7a1 1 0 00-1.447-.894l-2 1A1 1 0 0014 8v.586l-2.293-2.293A2 2 0 0010 6H6.414l-2.707-2.707zM4 8a2 2 0 00-2 2v4a2 2 0 002 2h6a2 2 0 002-2v-.172l-2.586-2.586L10 12v2H4V8z" clipRule="evenodd" />
-                            )}
-                        </svg>
+                        {isVideoEnabled ? (
+                            <VideoCameraIcon className="w-6 h-6 text-white" />
+                        ) : (
+                            <VideoCameraSlashIcon className="w-6 h-6 text-white" />
+                        )}
                         <span className="text-white text-sm font-medium">Camera</span>
                     </button>
 
@@ -255,13 +252,16 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                         className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 hover:scale-105"
                         style={{ backgroundColor: isAudioEnabled ? '#C8A2E0' : '#ef4444' }}
                     >
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            {isAudioEnabled ? (
-                                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
-                            ) : (
-                                <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-2.473-2.473A5.002 5.002 0 0015 8a1 1 0 10-2 0 3 3 0 01-4.547 2.547L7 9.094V4a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 005 4v5.586L3.707 8.293a1 1 0 00-1.414 1.414L5 12.414V14a5 5 0 006.707 4.707l1.586 1.586a7.001 7.001 0 01-8.207-5.293H6a1 1 0 100-2h-.586L3.707 2.293z" clipRule="evenodd" />
-                            )}
-                        </svg>
+                        {isAudioEnabled ? (
+                            <MicrophoneIcon className="w-6 h-6 text-white" />
+                        ) : (
+                            <span className="relative inline-flex items-center justify-center w-6 h-6 overflow-hidden">
+                                <MicrophoneIcon className="w-6 h-6 text-white" />
+                                <span className="absolute inset-0 flex items-center justify-center">
+                                    <span className="block w-[2px] h-7 bg-white -rotate-45 rounded-full" />
+                                </span>
+                            </span>
+                        )}
                         <span className="text-white text-sm font-medium">Audio</span>
                     </button>
 
@@ -270,9 +270,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                         onClick={() => setShowDashboard(!showDashboard)}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 hover:scale-105 bg-gray-700 hover:bg-gray-600"
                     >
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                        </svg>
+                        <ChartBarIcon className="w-6 h-6 text-white" />
                         <span className="text-white text-sm font-medium">Dashboard</span>
                     </button>
 

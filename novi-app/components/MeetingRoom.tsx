@@ -28,7 +28,7 @@ import { ChartBarIcon } from "@heroicons/react/24/solid";
 import { LayoutList, Users } from "lucide-react";
 import EndCallButton from "./EndCallButton";
 import GroupDashboard from "./group-meeting/Group-Dashboard";
-import Dashboard from "./Dashboard";
+import Dashboard from "./Ind-components/Ind-Dashboard";
 import useDistractionDetection from "@/hooks/useDistractionDetection";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right";

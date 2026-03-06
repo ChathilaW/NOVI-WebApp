@@ -1,6 +1,6 @@
 'use client'
 
-import Speedometer from './Speedometer';
+import Speedometer from './Ind-Speedometer';
 type Props = {
   stats: any;
   isVideoEnabled: boolean;
