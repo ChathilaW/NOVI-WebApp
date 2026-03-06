@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Lightbulb, HelpCircle, SkipForward, Loader2 } from 'lucide-react';
 import { WordEntry, fetchRandomWords, fetchDefinition } from '@/constants/wordBank';
+import { getWordJumbleState, saveWordJumbleState } from '@/lib/wordJumbleStore';
 
 const DEF_API = process.env.NEXT_PUBLIC_WORD_DEF_API ?? '';
 const WORDS_PER_SESSION = 10; // fetch this many words each time the game opens
@@ -84,6 +85,38 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
         (async () => {
             setIsLoading(true);
 
+            try {
+                const parsed = getWordJumbleState();
+                if (parsed) {
+                    // finished if on the 10th word and either time is up or correctly solved
+                    const isFinished = parsed.wordIdx >= WORDS_PER_SESSION && (parsed.timeLeft <= 0 || parsed.feedback === 'correct');
+
+                    if (!isFinished && parsed.words && parsed.words.length > 0) {
+                        setWords(parsed.words);
+                        wordsRef.current = parsed.words;
+                        wordIdx.current = parsed.wordIdx;
+                        setScore(parsed.score ?? 0);
+                        setStreak(parsed.streak ?? 0);
+                        setSolved(parsed.solved ?? 0);
+                        setCurrentEntry(parsed.currentEntry ?? null);
+                        setScrambled(parsed.scrambled ?? []);
+                        setSelected(parsed.selected ?? []);
+                        setTimeLeft(parsed.timeLeft ?? 30);
+                        setShowClue(parsed.showClue ?? false);
+                        setHintUsed(parsed.hintUsed ?? false);
+                        setFeedback(parsed.feedback ?? null);
+                        setIsLoading(false);
+                        return;
+                    } else if (isFinished) {
+                        setScore(parsed.score ?? 0);
+                        setStreak(parsed.streak ?? 0);
+                        setSolved(parsed.solved ?? 0);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to parse word jumble state', err);
+            }
+
             // 1) Fetch a pool of random words (request extra to account for
             //    words whose definitions may not be found)
             const rawWords = await fetchRandomWords(WORDS_PER_SESSION * 3);
@@ -128,6 +161,40 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [words]);
 
+    /* Save State */
+    useEffect(() => {
+        if (!isLoading && words.length > 0) {
+            const stateToSave = {
+                words,
+                wordIdx: wordIdx.current,
+                score,
+                streak,
+                solved,
+                currentEntry,
+                scrambled,
+                selected,
+                timeLeft,
+                showClue,
+                hintUsed,
+                feedback,
+            };
+            saveWordJumbleState(stateToSave);
+        }
+    }, [
+        words,
+        score,
+        streak,
+        solved,
+        currentEntry,
+        scrambled,
+        selected,
+        timeLeft,
+        showClue,
+        hintUsed,
+        feedback,
+        isLoading,
+    ]);
+
     /* ---------------------------------------------------------------- */
     /*  Timer                                                            */
     /* ---------------------------------------------------------------- */
@@ -135,13 +202,15 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
         if (!currentEntry) return;
         if (timeLeft <= 0) {
             // time up → skip
-            setStreak(0);
+            if (feedback !== 'correct') {
+                setStreak(0);
+            }
             pickWord();
             return;
         }
         const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
         return () => clearInterval(id);
-    }, [timeLeft, currentEntry, pickWord]);
+    }, [timeLeft, currentEntry, pickWord, feedback]);
 
     /* ---------------------------------------------------------------- */
     /*  Auto-check answer                                                */
