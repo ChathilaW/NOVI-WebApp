@@ -3,6 +3,9 @@ export interface WordEntry {
     clue: string;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Static fallback word bank (used when API is unreachable)          */
+/* ------------------------------------------------------------------ */
 const WORD_BANK: WordEntry[] = [
     { word: "VARIABLE", clue: "A container that stores data in programming" },
     { word: "FUNCTION", clue: "A reusable block of code that performs a task" },
@@ -35,5 +38,55 @@ const WORD_BANK: WordEntry[] = [
     { word: "DEBUG", clue: "Find and fix errors in code" },
     { word: "STREAM", clue: "A continuous flow of data" },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Fetch random words from the API                                   */
+/* ------------------------------------------------------------------ */
+/**
+ * Fetches `count` random words from the NEXT_PUBLIC_RANDOM_WORD_API.
+ * - Over-fetches to compensate for filtering (4–10 letter words only).
+ * - Uppercases each word and generates an auto-clue.
+ * - Falls back to the static WORD_BANK on any error.
+ */
+export async function fetchRandomWords(count: number = 100): Promise<WordEntry[]> {
+    const apiUrl = process.env.NEXT_PUBLIC_RANDOM_WORD_API;
+
+    if (!apiUrl) {
+        console.warn('NEXT_PUBLIC_RANDOM_WORD_API not set — using static word bank.');
+        return WORD_BANK;
+    }
+
+    try {
+        // Over-fetch to have enough words after length filtering
+        const response = await fetch(`${apiUrl}?number=${count * 2}`);
+
+        if (!response.ok) {
+            throw new Error(`API responded with status ${response.status}`);
+        }
+
+        const rawWords: string[] = await response.json();
+
+        // Filter to words with 4–10 letters (keeps the game playable)
+        const filtered = rawWords
+            .filter((w) => w.length >= 4 && w.length <= 10)
+            .slice(0, count);
+
+        if (filtered.length === 0) {
+            throw new Error('No words passed the length filter');
+        }
+
+        // Convert to WordEntry with auto-generated clues
+        return filtered.map((w) => {
+            const upper = w.toUpperCase();
+            return {
+                word: upper,
+                clue: `${upper.length} letters, starts with "${upper[0]}"`,
+            };
+        });
+    } catch (err) {
+        console.error('Failed to fetch random words, falling back to static bank:', err);
+        return WORD_BANK;
+    }
+}
 
 export default WORD_BANK;

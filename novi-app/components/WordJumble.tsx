@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { X, Lightbulb, HelpCircle, SkipForward } from 'lucide-react';
-import WORD_BANK, { WordEntry } from '@/constants/wordBank';
+import { X, Lightbulb, HelpCircle, SkipForward, Loader2 } from 'lucide-react';
+import WORD_BANK, { WordEntry, fetchRandomWords } from '@/constants/wordBank';
 
 /* ------------------------------------------------------------------ */
 /*  Helper: shuffle an array (Fisher-Yates)                           */
@@ -27,6 +27,10 @@ interface WordJumbleProps {
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
 const WordJumble = ({ onClose }: WordJumbleProps) => {
+    /* — word bank state (fetched from API per meeting) — */
+    const [wordBank, setWordBank] = useState<WordEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     /* — game-level state — */
     const [score, setScore] = useState(0);
     const [streak, setStreak] = useState(0);
@@ -52,14 +56,16 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
     /*  Pick a new word                                                  */
     /* ---------------------------------------------------------------- */
     const pickWord = useCallback(() => {
-        let pool = WORD_BANK.map((_, i) => i).filter((i) => !usedIndices.includes(i));
+        if (wordBank.length === 0) return;  // wait until words are loaded
+
+        let pool = wordBank.map((_, i) => i).filter((i) => !usedIndices.includes(i));
         if (pool.length === 0) {
             // all used — reset
-            pool = WORD_BANK.map((_, i) => i);
+            pool = wordBank.map((_, i) => i);
             setUsedIndices([]);
         }
         const idx = pool[Math.floor(Math.random() * pool.length)];
-        const entry = WORD_BANK[idx];
+        const entry = wordBank[idx];
         setUsedIndices((prev) => [...prev, idx]);
         setCurrentEntry(entry);
         setScrambled(shuffle(entry.word.split('')));
@@ -68,13 +74,29 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
         setShowClue(false);
         setHintUsed(false);
         setFeedback(null);
-    }, [usedIndices]);
+    }, [usedIndices, wordBank]);
 
-    /* first word on mount */
+    /* fetch 100 random words from the API on mount */
     useEffect(() => {
-        pickWord();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        let cancelled = false;
+        (async () => {
+            setIsLoading(true);
+            const words = await fetchRandomWords(100);
+            if (!cancelled) {
+                setWordBank(words);
+                setIsLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
     }, []);
+
+    /* pick the first word once the word bank is loaded */
+    useEffect(() => {
+        if (wordBank.length > 0 && !currentEntry) {
+            pickWord();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [wordBank]);
 
     /* ---------------------------------------------------------------- */
     /*  Timer                                                            */
@@ -161,7 +183,14 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
     /* ---------------------------------------------------------------- */
     /*  Render                                                           */
     /* ---------------------------------------------------------------- */
-    if (!currentEntry) return null;
+    if (isLoading || !currentEntry) {
+        return (
+            <div className="fixed top-4 right-4 z-50 w-[300px] rounded-2xl bg-[#1a1e25] shadow-2xl border border-gray-700/50 flex flex-col items-center justify-center font-sans text-white p-10 gap-3">
+                <Loader2 size={28} className="animate-spin text-[#5162F6]" />
+                <span className="text-sm text-gray-400">Loading words…</span>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed top-4 right-4 z-50 w-[300px] rounded-2xl bg-[#1a1e25] shadow-2xl border border-gray-700/50 flex flex-col font-sans text-white overflow-hidden select-none">
