@@ -7,7 +7,6 @@ import IndRoom from '@/components/Ind-components/Ind-Room';
 const IndLearnPage = () => {
     const [currentView, setCurrentView] = useState<'start' | 'setup' | 'room'>('start');
     const [isVideoEnabled, setIsVideoEnabled] = useState(false);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
     
     const handleStart = () => {
         setCurrentView('setup');
@@ -18,7 +17,7 @@ const IndLearnPage = () => {
     };
 
     if (currentView === 'room') {
-        return <IndRoom initialVideoEnabled={isVideoEnabled} initialAudioEnabled={isAudioEnabled} />;
+        return <IndRoom initialVideoEnabled={isVideoEnabled} />;
     }
 
     if (currentView === 'setup') {
@@ -27,8 +26,6 @@ const IndLearnPage = () => {
                 onJoinRoom={handleJoinRoom}
                 isVideoEnabled={isVideoEnabled}
                 setIsVideoEnabled={setIsVideoEnabled}
-                isAudioEnabled={isAudioEnabled}
-                setIsAudioEnabled={setIsAudioEnabled}
             />
         );
     }

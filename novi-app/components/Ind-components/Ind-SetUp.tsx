@@ -1,29 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { VideoCameraIcon, VideoCameraSlashIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
+import { VideoCameraIcon, VideoCameraSlashIcon } from '@heroicons/react/24/solid';
 
 interface IndSetUpProps {
     onJoinRoom: () => void;
     isVideoEnabled: boolean;
     setIsVideoEnabled: (enabled: boolean) => void;
-    isAudioEnabled: boolean;
-    setIsAudioEnabled: (enabled: boolean) => void;
 }
 
 const IndSetUp = ({ 
     onJoinRoom, 
     isVideoEnabled, 
-    setIsVideoEnabled, 
-    isAudioEnabled, 
-    setIsAudioEnabled 
+    setIsVideoEnabled 
 }: IndSetUpProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
     const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
-    const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
     const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('');
-    const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
     const [error, setError] = useState<string>('');
 
     // Get available media devices
@@ -31,16 +25,11 @@ const IndSetUp = ({
         try {
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoInputs = devices.filter(device => device.kind === 'videoinput');
-            const audioInputs = devices.filter(device => device.kind === 'audioinput');
             
             setVideoDevices(videoInputs);
-            setAudioDevices(audioInputs);
             
             if (videoInputs.length > 0 && !selectedVideoDevice) {
                 setSelectedVideoDevice(videoInputs[0].deviceId);
-            }
-            if (audioInputs.length > 0 && !selectedAudioDevice) {
-                setSelectedAudioDevice(audioInputs[0].deviceId);
             }
         } catch (err) {
             console.error('Error enumerating devices:', err);
@@ -62,12 +51,7 @@ const IndSetUp = ({
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 } : false,
-                audio: isAudioEnabled ? {
-                    deviceId: selectedAudioDevice ? { exact: selectedAudioDevice } : undefined,
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                } : false
+                audio: false
             };
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -90,19 +74,9 @@ const IndSetUp = ({
         setIsVideoEnabled(!isVideoEnabled);
     };
 
-    // Toggle audio
-    const toggleAudio = () => {
-        setIsAudioEnabled(!isAudioEnabled);
-    };
-
     // Change video device
     const handleVideoDeviceChange = (deviceId: string) => {
         setSelectedVideoDevice(deviceId);
-    };
-
-    // Change audio device
-    const handleAudioDeviceChange = (deviceId: string) => {
-        setSelectedAudioDevice(deviceId);
     };
 
     // Initialize devices on mount
@@ -110,7 +84,7 @@ const IndSetUp = ({
         getDevices();
         
         // Request permissions to get device labels
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 stream.getTracks().forEach(track => track.stop());
                 getDevices();
@@ -127,10 +101,10 @@ const IndSetUp = ({
 
     // Update stream when settings change
     useEffect(() => {
-        if (isVideoEnabled || isAudioEnabled) {
+        if (isVideoEnabled) {
             startMediaStream();
         } else {
-            // Stop stream if both are disabled
+            // Stop stream if video is disabled
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
                 setMediaStream(null);
@@ -139,7 +113,7 @@ const IndSetUp = ({
                 }
             }
         }
-    }, [isVideoEnabled, isAudioEnabled, selectedVideoDevice, selectedAudioDevice]);
+    }, [isVideoEnabled, selectedVideoDevice]);
 
     const handleJoinMeeting = () => {
         // Clean up media stream before joining
@@ -185,27 +159,11 @@ const IndSetUp = ({
                                 <VideoCameraSlashIcon className="w-6 h-6 text-white" />
                             )}
                         </button>
-                        <button
-                            onClick={toggleAudio}
-                            className="p-4 rounded-full transition-all duration-300 hover:scale-110"
-                            style={{ backgroundColor: isAudioEnabled ? '#C8A2E0' : '#ef4444' }}
-                        >
-                            {isAudioEnabled ? (
-                                <MicrophoneIcon className="w-6 h-6 text-white" />
-                            ) : (
-                                <span className="relative inline-flex items-center justify-center w-6 h-6 overflow-hidden">
-                                    <MicrophoneIcon className="w-6 h-6 text-white" />
-                                    <span className="absolute inset-0 flex items-center justify-center">
-                                        <span className="block w-[2px] h-7 bg-white -rotate-45 rounded-full" />
-                                    </span>
-                                </span>
-                            )}
-                        </button>
                     </div>
                 </div>
 
                 {/* Device Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="mb-8">
                     {/* Camera Selection */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -224,25 +182,6 @@ const IndSetUp = ({
                             ))}
                         </select>
                     </div>
-
-                    {/* Microphone Selection */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Microphone
-                        </label>
-                        <select
-                            value={selectedAudioDevice}
-                            onChange={(e) => handleAudioDeviceChange(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all"
-                            disabled={audioDevices.length === 0}
-                        >
-                            {audioDevices.map((device) => (
-                                <option key={device.deviceId} value={device.deviceId}>
-                                    {device.label || `Microphone ${device.deviceId.slice(0, 5)}`}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
                 </div>
 
                 {/* Error Message */}
@@ -257,19 +196,13 @@ const IndSetUp = ({
                     <label className="flex items-center gap-3 cursor-pointer">
                         <input
                             type="checkbox"
-                            checked={!isVideoEnabled && !isAudioEnabled}
+                            checked={!isVideoEnabled}
                             onChange={() => {
-                                if (isVideoEnabled || isAudioEnabled) {
-                                    setIsVideoEnabled(false);
-                                    setIsAudioEnabled(false);
-                                } else {
-                                    setIsVideoEnabled(true);
-                                    setIsAudioEnabled(true);
-                                }
+                                setIsVideoEnabled(!isVideoEnabled);
                             }}
                             className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
                         />
-                        <span className="text-gray-700 font-medium">Join with mic and camera off</span>
+                        <span className="text-gray-700 font-medium">Join with camera off</span>
                     </label>
                 </div>
 

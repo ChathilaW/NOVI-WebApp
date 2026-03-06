@@ -4,18 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import { initDistraction, detectDistraction } from '@/ml/combined';
 import Dashboard from './Ind-Dashboard';
 import IndEndCallButton from './Ind-EndCallButton';
-import { UserIcon, VideoCameraIcon, VideoCameraSlashIcon, MicrophoneIcon, ChartBarIcon } from '@heroicons/react/24/solid';
+import { UserIcon, VideoCameraIcon, VideoCameraSlashIcon, ChartBarIcon } from '@heroicons/react/24/solid';
 
 interface IndRoomProps {
     initialVideoEnabled?: boolean;
-    initialAudioEnabled?: boolean;
 }
 
-const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: IndRoomProps = {}) => {
+const IndRoom = ({ initialVideoEnabled = true }: IndRoomProps = {}) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
     const [isVideoEnabled, setIsVideoEnabled] = useState(initialVideoEnabled);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(initialAudioEnabled);
     
     // Distraction detection state
     const [distractionData, setDistractionData] = useState<any>(null);
@@ -29,7 +27,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
 
 
     // Initialize media stream
-    const startMediaStream = async (enableVideo: boolean, enableAudio: boolean) => {
+    const startMediaStream = async (enableVideo: boolean) => {
         try {
             // Stop existing stream first
             if (mediaStream) {
@@ -41,11 +39,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 } : false,
-                audio: enableAudio ? {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                } : false
+                audio: false
             };
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -83,18 +77,6 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
         }
     };
 
-    // Toggle audio
-    const toggleAudio = () => {
-        const newAudioState = !isAudioEnabled;
-        setIsAudioEnabled(newAudioState);
-        
-        if (mediaStream) {
-            const audioTrack = mediaStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = newAudioState;
-            }
-        }
-    };
 
     // Handle end session - cleanup and close
     const handleEndCall = () => {
@@ -110,7 +92,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
 
     // Initialize on mount
     useEffect(() => {
-        startMediaStream(true, true);
+        startMediaStream(true);
 
         return () => {
             // Cleanup on unmount
@@ -246,24 +228,7 @@ const IndRoom = ({ initialVideoEnabled = true, initialAudioEnabled = true }: Ind
                         <span className="text-white text-sm font-medium">Camera</span>
                     </button>
 
-                    {/* Audio Button */}
-                    <button
-                        onClick={toggleAudio}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 hover:scale-105"
-                        style={{ backgroundColor: isAudioEnabled ? '#C8A2E0' : '#ef4444' }}
-                    >
-                        {isAudioEnabled ? (
-                            <MicrophoneIcon className="w-6 h-6 text-white" />
-                        ) : (
-                            <span className="relative inline-flex items-center justify-center w-6 h-6 overflow-hidden">
-                                <MicrophoneIcon className="w-6 h-6 text-white" />
-                                <span className="absolute inset-0 flex items-center justify-center">
-                                    <span className="block w-[2px] h-7 bg-white -rotate-45 rounded-full" />
-                                </span>
-                            </span>
-                        )}
-                        <span className="text-white text-sm font-medium">Audio</span>
-                    </button>
+
 
                     {/* Dashboard Button */}
                     <button
