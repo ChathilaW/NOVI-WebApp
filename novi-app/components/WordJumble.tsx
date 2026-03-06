@@ -1,8 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Lightbulb, HelpCircle, SkipForward, Loader2 } from 'lucide-react';
-import WORD_BANK, { WordEntry, fetchRandomWords } from '@/constants/wordBank';
+import { WordEntry, fetchRandomWords, fetchDefinition } from '@/constants/wordBank';
+
+const DEF_API = process.env.NEXT_PUBLIC_WORD_DEF_API ?? '';
+const WORDS_PER_SESSION = 10; // fetch this many words each time the game opens
 
 /* ------------------------------------------------------------------ */
 /*  Helper: shuffle an array (Fisher-Yates)                           */
@@ -27,20 +30,21 @@ interface WordJumbleProps {
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
 const WordJumble = ({ onClose }: WordJumbleProps) => {
-    /* — word bank state (fetched from API per meeting) — */
-    const [wordBank, setWordBank] = useState<WordEntry[]>([]);
+    /* — word list for this session — */
+    const [words, setWords] = useState<WordEntry[]>([]);
+    const wordsRef = useRef<WordEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const wordIdx = useRef(0);
 
     /* — game-level state — */
     const [score, setScore] = useState(0);
     const [streak, setStreak] = useState(0);
     const [solved, setSolved] = useState(0);
-    const [usedIndices, setUsedIndices] = useState<number[]>([]);
 
     /* — round-level state — */
     const [currentEntry, setCurrentEntry] = useState<WordEntry | null>(null);
     const [scrambled, setScrambled] = useState<string[]>([]);
-    const [selected, setSelected] = useState<number[]>([]);   // indices into scrambled
+    const [selected, setSelected] = useState<number[]>([]);
     const [timeLeft, setTimeLeft] = useState(30);
     const [showClue, setShowClue] = useState(false);
     const [hintUsed, setHintUsed] = useState(false);
@@ -53,20 +57,16 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
     );
 
     /* ---------------------------------------------------------------- */
-    /*  Pick a new word                                                  */
+    /*  Pick next word from the list                                     */
     /* ---------------------------------------------------------------- */
     const pickWord = useCallback(() => {
-        if (wordBank.length === 0) return;  // wait until words are loaded
+        const list = wordsRef.current;
+        const idx = wordIdx.current;
+        if (idx >= list.length) return; // all words used
 
-        let pool = wordBank.map((_, i) => i).filter((i) => !usedIndices.includes(i));
-        if (pool.length === 0) {
-            // all used — reset
-            pool = wordBank.map((_, i) => i);
-            setUsedIndices([]);
-        }
-        const idx = pool[Math.floor(Math.random() * pool.length)];
-        const entry = wordBank[idx];
-        setUsedIndices((prev) => [...prev, idx]);
+        const entry = list[idx];
+        wordIdx.current = idx + 1;
+
         setCurrentEntry(entry);
         setScrambled(shuffle(entry.word.split('')));
         setSelected([]);
@@ -74,29 +74,59 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
         setShowClue(false);
         setHintUsed(false);
         setFeedback(null);
-    }, [usedIndices, wordBank]);
+    }, []);
 
-    /* fetch 100 random words from the API on mount */
+    /* ---------------------------------------------------------------- */
+    /*  Bootstrap: fetch random words + definitions in parallel          */
+    /* ---------------------------------------------------------------- */
     useEffect(() => {
         let cancelled = false;
         (async () => {
             setIsLoading(true);
-            const words = await fetchRandomWords(100);
-            if (!cancelled) {
-                setWordBank(words);
+
+            // 1) Fetch a pool of random words (request extra to account for
+            //    words whose definitions may not be found)
+            const rawWords = await fetchRandomWords(WORDS_PER_SESSION * 3);
+            if (cancelled) return;
+
+            // If the static fallback bank was returned (words already have clues)
+            if (rawWords.length > 0 && rawWords[0].clue !== '') {
+                const session = rawWords.slice(0, WORDS_PER_SESSION);
+                setWords(session);
+                wordsRef.current = session;
                 setIsLoading(false);
+                return;
             }
+
+            // 2) Fetch all definitions in parallel
+            const results = await Promise.allSettled(
+                rawWords.map((entry) => fetchDefinition(entry.word, DEF_API)),
+            );
+            if (cancelled) return;
+
+            // 3) Keep only words that got a valid definition, take first 10
+            const ready: WordEntry[] = [];
+            results.forEach((r, i) => {
+                if (ready.length >= WORDS_PER_SESSION) return;
+                if (r.status === 'fulfilled' && r.value) {
+                    ready.push({ word: rawWords[i].word, clue: r.value });
+                }
+            });
+
+            setWords(ready);
+            wordsRef.current = ready;
+            setIsLoading(false);
         })();
         return () => { cancelled = true; };
     }, []);
 
-    /* pick the first word once the word bank is loaded */
+    /* pick the first word once words are loaded */
     useEffect(() => {
-        if (wordBank.length > 0 && !currentEntry) {
+        if (words.length > 0 && !currentEntry) {
             pickWord();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [wordBank]);
+    }, [words]);
 
     /* ---------------------------------------------------------------- */
     /*  Timer                                                            */

@@ -40,13 +40,33 @@ const WORD_BANK: WordEntry[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Fetch random words from the API                                   */
+/*  Fetch a word's definition from the dictionary API                  */
+/* ------------------------------------------------------------------ */
+export async function fetchDefinition(word: string, apiUrl: string): Promise<string | null> {
+    try {
+        const res = await fetch(`${apiUrl}/${encodeURIComponent(word.toLowerCase())}`);
+        if (!res.ok) return null;
+
+        const data = await res.json();
+
+        // Navigate: data[0].meanings[0].definitions[0].definition
+        const definition: string | undefined =
+            data?.[0]?.meanings?.[0]?.definitions?.[0]?.definition;
+
+        return definition ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Fetch random words from the API (no definitions — fetched lazily)  */
 /* ------------------------------------------------------------------ */
 /**
- * Fetches `count` random words from the NEXT_PUBLIC_RANDOM_WORD_API.
- * - Over-fetches to compensate for filtering (4–10 letter words only).
- * - Uppercases each word and generates an auto-clue.
- * - Falls back to the static WORD_BANK on any error.
+ * Fetches `count` random words from NEXT_PUBLIC_RANDOM_WORD_API.
+ * Returns them uppercased with empty clues; the component fetches
+ * definitions lazily via fetchDefinition.
+ * Falls back to the static WORD_BANK on any error.
  */
 export async function fetchRandomWords(count: number = 100): Promise<WordEntry[]> {
     const apiUrl = process.env.NEXT_PUBLIC_RANDOM_WORD_API;
@@ -57,7 +77,6 @@ export async function fetchRandomWords(count: number = 100): Promise<WordEntry[]
     }
 
     try {
-        // Over-fetch to have enough words after length filtering
         const response = await fetch(`${apiUrl}?number=${count * 2}`);
 
         if (!response.ok) {
@@ -66,7 +85,6 @@ export async function fetchRandomWords(count: number = 100): Promise<WordEntry[]
 
         const rawWords: string[] = await response.json();
 
-        // Filter to words with 4–10 letters (keeps the game playable)
         const filtered = rawWords
             .filter((w) => w.length >= 4 && w.length <= 10)
             .slice(0, count);
@@ -75,14 +93,10 @@ export async function fetchRandomWords(count: number = 100): Promise<WordEntry[]
             throw new Error('No words passed the length filter');
         }
 
-        // Convert to WordEntry with auto-generated clues
-        return filtered.map((w) => {
-            const upper = w.toUpperCase();
-            return {
-                word: upper,
-                clue: `${upper.length} letters, starts with "${upper[0]}"`,
-            };
-        });
+        return filtered.map((w) => ({
+            word: w.toUpperCase(),
+            clue: '',   // filled lazily by the component
+        }));
     } catch (err) {
         console.error('Failed to fetch random words, falling back to static bank:', err);
         return WORD_BANK;
