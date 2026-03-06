@@ -4,6 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { DeviceSettings, useCall, useCallStateHooks, VideoPreview } from "@stream-io/video-react-sdk";
 import Alert from "./Alert";
 import { Button } from "./ui/button";
+import { clearWordJumbleState } from "@/lib/wordJumbleStore";
 import { useEffect, useState } from "react";
 
 const MeetingSetup = ({
@@ -74,6 +75,7 @@ const MeetingSetup = ({
             <Button
                 className="rounded-3xl bg-blue-500 p-6 hover:bg-blue-800 hover:scale-125 transition ease-in-out delay-150 duration-300"
                 onClick={() => {
+                clearWordJumbleState(); //Mini-game data of a previous meeting will be erased everytime the user joins a new call
                 call.join();
                 call.updateCallMembers({
                     update_members: [{ user_id: user.id }],
