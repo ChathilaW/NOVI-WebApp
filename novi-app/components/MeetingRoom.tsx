@@ -125,7 +125,7 @@ const MeetingRoom = () => {
           <CallParticipantsList onClose={() => setShowParticipants(false)} />
         </div>
                       {/* Mini Game panel */}
-                {showMiniGame && (
+                {!isMeetingOwner && showMiniGame && (
                     <WordJumble onClose={() => setShowMiniGame(false)} />
                 )}
 
@@ -206,11 +206,13 @@ const MeetingRoom = () => {
         </button>
 
         {/* Mini Game toggle button */}
-        <button onClick={() => setShowMiniGame((prev) => !prev)}>
-          <div className="cursor-pointer rounded-2xl bg-[#19232d] px-4 py-2 hover:bg-[#4c535b]">
-            <Gamepad2 size={20} className="text-white" />
-          </div>
-        </button>
+        {!isMeetingOwner && (
+          <button onClick={() => setShowMiniGame((prev) => !prev)}>
+            <div className="cursor-pointer rounded-2xl bg-[#19232d] px-4 py-2 hover:bg-[#4c535b]">
+              <Gamepad2 size={20} className="text-white" />
+            </div>
+          </button>
+        )}
 
         <EndCallButton />
       </div>

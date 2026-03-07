@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Lightbulb, HelpCircle, SkipForward, Loader2 } from 'lucide-react';
+import Draggable from 'react-draggable';
 import { WordEntry, fetchRandomWords, fetchDefinition } from '@/constants/wordBank';
 import { getWordJumbleState, saveWordJumbleState } from '@/lib/wordJumbleStore';
 
@@ -304,32 +305,38 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
     const secs = timeLeft % 60;
     const timerStr = `${mins}:${secs.toString().padStart(2, '0')}`;
 
+    const dragRefLoading = useRef<HTMLDivElement>(null);
+    const dragRefGame = useRef<HTMLDivElement>(null);
+
     /* ---------------------------------------------------------------- */
     /*  Render                                                           */
     /* ---------------------------------------------------------------- */
     if (isLoading || !currentEntry) {
         return (
-            <div className="fixed top-4 right-4 z-50 w-[300px] rounded-2xl bg-[#1a1e25] shadow-2xl border border-gray-700/50 flex flex-col items-center justify-center font-sans text-white p-10 gap-3">
-                <Loader2 size={28} className="animate-spin text-[#5162F6]" />
-                <span className="text-sm text-gray-400">Loading words…</span>
-            </div>
+            <Draggable nodeRef={dragRefLoading} bounds="parent">
+                <div ref={dragRefLoading} className="fixed top-4 right-4 z-50 w-[300px] rounded-2xl bg-[#1a1e25] cursor-grab active:cursor-grabbing shadow-2xl border border-gray-700/50 flex flex-col items-center justify-center font-sans text-white p-10 gap-3">
+                    <Loader2 size={28} className="animate-spin text-[#5162F6]" />
+                    <span className="text-sm text-gray-400">Loading words…</span>
+                </div>
+            </Draggable>
         );
     }
 
     return (
-        <div className="fixed top-4 right-4 z-50 w-[300px] rounded-2xl bg-[#1a1e25] shadow-2xl border border-gray-700/50 flex flex-col font-sans text-white overflow-hidden select-none">
-            {/* --- Header --- */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/40">
-                <span className="font-bold text-base flex items-center gap-2">
-                    🧩 Mini Game
-                </span>
-                <button
-                    onClick={onClose}
-                    className="hover:bg-gray-700 rounded-full p-1 transition-colors"
-                >
-                    <X size={18} />
-                </button>
-            </div>
+        <Draggable nodeRef={dragRefGame} handle=".drag-handle" bounds="parent">
+            <div ref={dragRefGame} className="fixed top-4 right-4 z-50 w-[300px] rounded-2xl bg-[#1a1e25] shadow-2xl border border-gray-700/50 flex flex-col font-sans text-white overflow-hidden select-none">
+                {/* --- Header --- */}
+                <div className="drag-handle flex items-center justify-between px-4 py-3 border-b border-gray-700/40 cursor-grab active:cursor-grabbing">
+                    <span className="font-bold text-base flex items-center gap-2">
+                        🧩 Letter Puzzle
+                    </span>
+                    <button
+                        onClick={onClose}
+                        className="hover:bg-gray-700 rounded-full p-1 transition-colors z-10"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
 
             {/* --- Stats bar --- */}
             <div className="grid grid-cols-3 gap-2 px-4 pt-3 pb-2">
@@ -385,7 +392,7 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
                 <p className="text-[10px] tracking-widest text-gray-400 text-center mb-2">
                     SCRAMBLED LETTERS
                 </p>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-2 min-h-[88px] content-start">
                     {scrambled.map((letter, idx) => {
                         const used = selected.includes(idx);
                         return (
@@ -462,6 +469,7 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
                 </div>
             </div>
         </div>
+        </Draggable>
     );
 };
 
