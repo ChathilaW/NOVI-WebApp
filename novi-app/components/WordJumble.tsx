@@ -117,9 +117,8 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
                 console.error('Failed to parse word jumble state', err);
             }
 
-            // 1) Fetch a pool of random words (request extra to account for
-            //    words whose definitions may not be found)
-            const rawWords = await fetchRandomWords(WORDS_PER_SESSION * 3);
+            // 1) Fetch a large pool of random words from local dictionary
+            const rawWords = await fetchRandomWords(100);
             if (cancelled) return;
 
             // If the static fallback bank was returned (words already have clues)
@@ -131,20 +130,35 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
                 return;
             }
 
-            // 2) Fetch all definitions in parallel
-            const results = await Promise.allSettled(
-                rawWords.map((entry) => fetchDefinition(entry.word, DEF_API)),
-            );
-            if (cancelled) return;
-
-            // 3) Keep only words that got a valid definition, take first 10
+            // 2) Fetch definitions in batches of 10
             const ready: WordEntry[] = [];
-            results.forEach((r, i) => {
-                if (ready.length >= WORDS_PER_SESSION) return;
-                if (r.status === 'fulfilled' && r.value) {
-                    ready.push({ word: rawWords[i].word, clue: r.value });
+            const BATCH_SIZE = 10;
+            
+            for (let i = 0; i < rawWords.length; i += BATCH_SIZE) {
+                if (ready.length >= WORDS_PER_SESSION) break;
+                if (cancelled) return;
+
+                const batch = rawWords.slice(i, i + BATCH_SIZE);
+                const results = await Promise.allSettled(
+                    batch.map((entry) => fetchDefinition(entry.word, DEF_API)),
+                );
+                
+                results.forEach((r, idx) => {
+                    if (ready.length >= WORDS_PER_SESSION) return;
+                    if (r.status === 'fulfilled' && r.value) {
+                        ready.push({ word: batch[idx].word, clue: r.value });
+                    }
+                });
+            }
+
+            // Fallback if we couldn't get enough valid definitions
+            if (ready.length < WORDS_PER_SESSION) {
+                const needed = WORDS_PER_SESSION - ready.length;
+                const remainingRaw = rawWords.filter(w => !ready.find(r => r.word === w.word));
+                for (let i = 0; i < needed && i < remainingRaw.length; i++) {
+                    ready.push({ word: remainingRaw[i].word, clue: 'Dictionary definition unavailable.' });
                 }
-            });
+            }
 
             setWords(ready);
             wordsRef.current = ready;

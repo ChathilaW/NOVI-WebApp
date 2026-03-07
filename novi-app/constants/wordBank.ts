@@ -3,6 +3,8 @@ export interface WordEntry {
     clue: string;
 }
 
+import dictionaryData from '@/data/dictionary.json';
+
 /* ------------------------------------------------------------------ */
 /*  Static fallback word bank (used when API is unreachable)          */
 /* ------------------------------------------------------------------ */
@@ -63,42 +65,35 @@ export async function fetchDefinition(word: string, apiUrl: string): Promise<str
 /*  Fetch random words from the API (no definitions — fetched lazily)  */
 /* ------------------------------------------------------------------ */
 /**
- * Fetches `count` random words from NEXT_PUBLIC_RANDOM_WORD_API.
+ * Fetches `count` random words from local dictionary.json.
  * Returns them uppercased with empty clues; the component fetches
  * definitions lazily via fetchDefinition.
  * Falls back to the static WORD_BANK on any error.
  */
 export async function fetchRandomWords(count: number = 100): Promise<WordEntry[]> {
-    const apiUrl = process.env.NEXT_PUBLIC_RANDOM_WORD_API;
-
-    if (!apiUrl) {
-        console.warn('NEXT_PUBLIC_RANDOM_WORD_API not set — using static word bank.');
-        return WORD_BANK;
-    }
-
     try {
-        const response = await fetch(`${apiUrl}?number=${count * 2}`);
-
-        if (!response.ok) {
-            throw new Error(`API responded with status ${response.status}`);
-        }
-
-        const rawWords: string[] = await response.json();
-
-        const filtered = rawWords
-            .filter((w) => w.length >= 4 && w.length <= 10)
-            .slice(0, count);
-
-        if (filtered.length === 0) {
+        const rawWords: string[] = dictionaryData;
+        const validWords = rawWords.filter((w) => w.length >= 4 && w.length <= 10);
+        
+        if (validWords.length === 0) {
             throw new Error('No words passed the length filter');
         }
 
-        return filtered.map((w) => ({
+        // Shuffle the valid words using Fisher-Yates
+        const shuffled = [...validWords];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        const selected = shuffled.slice(0, count);
+
+        return selected.map((w) => ({
             word: w.toUpperCase(),
             clue: '',   // filled lazily by the component
         }));
     } catch (err) {
-        console.error('Failed to fetch random words, falling back to static bank:', err);
+        console.error('Failed to get random words from dictionary, falling back to static bank:', err);
         return WORD_BANK;
     }
 }
