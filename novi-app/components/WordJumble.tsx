@@ -58,12 +58,68 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
     );
 
     /* ---------------------------------------------------------------- */
+    /*  Fetch new batch of words                                         */
+    /* ---------------------------------------------------------------- */
+    const loadNewBatch = useCallback(async (isCancelled: () => boolean = () => false) => {
+        setIsLoading(true);
+        setCurrentEntry(null);
+
+        const rawWords = await fetchRandomWords(100);
+        if (isCancelled()) return;
+
+        if (rawWords.length > 0 && rawWords[0].clue !== '') {
+            const session = rawWords.slice(0, WORDS_PER_SESSION);
+            setWords(session);
+            wordsRef.current = session;
+            wordIdx.current = 0;
+            setIsLoading(false);
+            return;
+        }
+
+        const ready: WordEntry[] = [];
+        const BATCH_SIZE = 10;
+        
+        for (let i = 0; i < rawWords.length; i += BATCH_SIZE) {
+            if (ready.length >= WORDS_PER_SESSION) break;
+            if (isCancelled()) return;
+
+            const batch = rawWords.slice(i, i + BATCH_SIZE);
+            const results = await Promise.allSettled(
+                batch.map((entry) => fetchDefinition(entry.word, DEF_API)),
+            );
+            
+            results.forEach((r, idx) => {
+                if (ready.length >= WORDS_PER_SESSION) return;
+                if (r.status === 'fulfilled' && r.value) {
+                    ready.push({ word: batch[idx].word, clue: r.value });
+                }
+            });
+        }
+
+        if (ready.length < WORDS_PER_SESSION) {
+            const needed = WORDS_PER_SESSION - ready.length;
+            const remainingRaw = rawWords.filter(w => !ready.find(r => r.word === w.word));
+            for (let i = 0; i < needed && i < remainingRaw.length; i++) {
+                ready.push({ word: remainingRaw[i].word, clue: 'Dictionary definition unavailable.' });
+            }
+        }
+
+        wordsRef.current = ready;
+        wordIdx.current = 0;
+        setWords(ready);
+        setIsLoading(false);
+    }, []);
+
+    /* ---------------------------------------------------------------- */
     /*  Pick next word from the list                                     */
     /* ---------------------------------------------------------------- */
     const pickWord = useCallback(() => {
         const list = wordsRef.current;
         const idx = wordIdx.current;
-        if (idx >= list.length) return; // all words used
+        if (idx >= list.length) {
+            loadNewBatch();
+            return;
+        }
 
         const entry = list[idx];
         wordIdx.current = idx + 1;
@@ -75,7 +131,7 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
         setShowClue(false);
         setHintUsed(false);
         setFeedback(null);
-    }, []);
+    }, [loadNewBatch]);
 
     /* ---------------------------------------------------------------- */
     /*  Bootstrap: fetch random words + definitions in parallel          */
@@ -117,63 +173,18 @@ const WordJumble = ({ onClose }: WordJumbleProps) => {
                 console.error('Failed to parse word jumble state', err);
             }
 
-            // 1) Fetch a large pool of random words from local dictionary
-            const rawWords = await fetchRandomWords(100);
-            if (cancelled) return;
-
-            // If the static fallback bank was returned (words already have clues)
-            if (rawWords.length > 0 && rawWords[0].clue !== '') {
-                const session = rawWords.slice(0, WORDS_PER_SESSION);
-                setWords(session);
-                wordsRef.current = session;
-                setIsLoading(false);
-                return;
-            }
-
-            // 2) Fetch definitions in batches of 10
-            const ready: WordEntry[] = [];
-            const BATCH_SIZE = 10;
-            
-            for (let i = 0; i < rawWords.length; i += BATCH_SIZE) {
-                if (ready.length >= WORDS_PER_SESSION) break;
-                if (cancelled) return;
-
-                const batch = rawWords.slice(i, i + BATCH_SIZE);
-                const results = await Promise.allSettled(
-                    batch.map((entry) => fetchDefinition(entry.word, DEF_API)),
-                );
-                
-                results.forEach((r, idx) => {
-                    if (ready.length >= WORDS_PER_SESSION) return;
-                    if (r.status === 'fulfilled' && r.value) {
-                        ready.push({ word: batch[idx].word, clue: r.value });
-                    }
-                });
-            }
-
-            // Fallback if we couldn't get enough valid definitions
-            if (ready.length < WORDS_PER_SESSION) {
-                const needed = WORDS_PER_SESSION - ready.length;
-                const remainingRaw = rawWords.filter(w => !ready.find(r => r.word === w.word));
-                for (let i = 0; i < needed && i < remainingRaw.length; i++) {
-                    ready.push({ word: remainingRaw[i].word, clue: 'Dictionary definition unavailable.' });
-                }
-            }
-
-            setWords(ready);
-            wordsRef.current = ready;
-            setIsLoading(false);
+            await loadNewBatch(() => cancelled);
         })();
         return () => { cancelled = true; };
     }, []);
 
     /* pick the first word once words are loaded */
     useEffect(() => {
-        if (words.length > 0 && !currentEntry) {
+        if (!isLoading && words.length > 0 && !currentEntry) {
             pickWord();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [words]);
+    }, [words, currentEntry, isLoading]);
 
     /* Save State */
     useEffect(() => {
