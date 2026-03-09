@@ -65,24 +65,51 @@ export async function POST(
     peakDistractionTime: number
   }
 
-  const { error } = await supabase
+  // Check if participant already exists without relying on composite primary keys for upsert
+  const { data: existing, error: selectError } = await supabase
     .from('group_session')
-    .upsert({
-      session_id: id,
-      participant_id: body.participantId,
-      participant_name: body.name,
-      status: body.status,
-      total_checks: body.totalChecks ?? 0,
-      distracted_checks: body.distractedChecks ?? 0,
-      peak_distraction_pct: body.peakDistractionPct ?? 0,
-      peak_distraction_time: body.peakDistractionTime
-        ? new Date(body.peakDistractionTime).toISOString()
-        : null,
-    }, { onConflict: 'session_id,participant_id' })
+    .select('session_id')
+    .eq('session_id', id)
+    .eq('participant_id', body.participantId)
+    .maybeSingle()
 
-  if (error) {
-    console.error('[group_session POST upsert error]', error)
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  if (selectError) {
+    console.error('[group_session POST select error]', selectError)
+    return NextResponse.json({ ok: false, error: selectError.message }, { status: 500 })
+  }
+
+  const payload = {
+    session_id: id,
+    participant_id: body.participantId,
+    participant_name: body.name,
+    status: body.status,
+    total_checks: body.totalChecks ?? 0,
+    distracted_checks: body.distractedChecks ?? 0,
+    peak_distraction_pct: body.peakDistractionPct ?? 0,
+    peak_distraction_time: body.peakDistractionTime
+      ? new Date(body.peakDistractionTime).toISOString()
+      : null,
+  }
+
+  let dbError;
+
+  if (existing) {
+    const { error } = await supabase
+      .from('group_session')
+      .update(payload)
+      .eq('session_id', id)
+      .eq('participant_id', body.participantId)
+    dbError = error
+  } else {
+    const { error } = await supabase
+      .from('group_session')
+      .insert(payload)
+    dbError = error
+  }
+
+  if (dbError) {
+    console.error('[group_session POST update/insert error]', dbError)
+    return NextResponse.json({ ok: false, error: dbError.message }, { status: 500 })
   }
   
   return NextResponse.json({ ok: true })
