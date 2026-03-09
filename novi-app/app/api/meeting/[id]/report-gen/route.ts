@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import fs from 'fs';
-import path from 'path';
 
 export async function GET(
   req: Request,
@@ -59,19 +57,30 @@ export async function GET(
     // Combine Headers and Rows
     const csvContent = [headers.join(','), ...rows].join('\n');
 
-    // Define File Path (Project Root / generated_reports)
-    const fileName = `meeting_report_${sessionId}.csv`;
-    const reportsDir = path.join(process.cwd(), 'generated_reports');
-    const filePath = path.join(reportsDir, fileName);
+    // Define File Name
+    const fileName = `group_report-MeetingID-${sessionId}.csv`;
 
-    // Write file to disk
-    fs.writeFileSync(filePath, csvContent, 'utf-8');
+    // Upload to Supabase Storage Bucket named "generated_reports"
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('generated_reports') // Make sure your bucket is exactly named "generated_reports"
+      .upload(fileName, csvContent, {
+        contentType: 'text/csv',
+        upsert: true // Overwrite if a file with the same name already exists
+      });
 
-    console.log(`[CSV Gen] Successfully generated report: ${filePath}`);
+    if (uploadError) {
+      console.error('[CSV Gen] Error uploading to Supabase:', uploadError);
+      return NextResponse.json(
+        { ok: false, error: `Upload failed: ${uploadError.message}` }, 
+        { status: 500 }
+      );
+    }
+
+    console.log(`[CSV Gen] Successfully uploaded report to Supabase: ${fileName}`);
 
     return NextResponse.json({ 
       ok: true, 
-      message: 'Report generated successfully',
+      message: 'Report generated and securely saved to Supabase',
       file: fileName
     });
 
