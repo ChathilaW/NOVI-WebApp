@@ -60,6 +60,13 @@ const MainMenu = () => {
             })
 
             if (meetingState === 'Instant') {
+                // Wipe the group_session database table for the new meeting session
+                try {
+                    await fetch('/api/meeting/group-cleanup', { method: 'DELETE' });
+                } catch (err) {
+                    console.error('[DB Cleanup] Failed to trigger cleanup', err);
+                }
+
                 router.push(`/meeting/${call.id}`);
                 toast('Setting up your meeting',{
                     duration: 3000,
