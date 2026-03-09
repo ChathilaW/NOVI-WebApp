@@ -28,9 +28,12 @@ const EndCallButton = () => {
         await call.endCall();
         
         // Trigger the CSV report generation silently in the background
-        fetch(`/api/meeting/${call.id}/group-report-gen`).catch(err => {
-            console.error('[CSV Gen trigger error]', err);
-        });
+        // We MUST await this so the browser doesn't cancel the request when routing away!
+        try {
+            await fetch(`/api/meeting/${call.id}/group-report-gen`);
+        } catch (err) {
+            console.error('[Excel Gen trigger error]', err);
+        }
         
         router.push('/');
     };
