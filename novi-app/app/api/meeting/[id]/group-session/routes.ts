@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-const STALE_THRESHOLD_SECS = 10
-
 /** GET /api/meeting/[id]/group-session → { distractedCount, totalCount, participants[] } */
 export async function GET(
   _req: NextRequest,
@@ -10,13 +8,11 @@ export async function GET(
 ) {
   const { id } = await params
 
-  const staleTime = new Date(Date.now() - STALE_THRESHOLD_SECS * 1000).toISOString()
-
+  // Note: No stale time filter is used here as there is no last_seen / created_at column.
   const { data, error } = await supabase
     .from('group_session')
     .select('*')
-    .eq('meeting_id', id)
-    .gt('created_at', staleTime)
+    .eq('session_id', id)
 
   if (error) {
     console.error('[group_session GET]', error)
@@ -31,16 +27,15 @@ export async function GET(
         ? Math.round((row.distracted_checks / row.total_checks) * 100)
         : 0
 
-    // Keeping status logic just in case it's returned / added later, otherwise it benignly bypasses
     if (row.status === 'FOCUSED' || row.status === 'DISTRACTED') {
       totalCount++
       if (row.status === 'DISTRACTED') distractedCount++
     }
 
     return {
-      sessionType: row.session_type,
       participantId: row.participant_id,
       name: row.participant_name,
+      status: row.status,
       totalChecks: row.total_checks,
       distractedChecks: row.distracted_checks,
       distractionPct,
@@ -48,7 +43,6 @@ export async function GET(
       peakDistractionTime: row.peak_distraction_time
         ? new Date(row.peak_distraction_time).getTime()
         : 0,
-      createdAt: row.created_at,
     }
   })
 
@@ -62,7 +56,6 @@ export async function POST(
 ) {
   const { id } = await params
   const body = await req.json() as {
-    sessionType?: string
     participantId: string
     name: string
     status?: string
@@ -75,19 +68,17 @@ export async function POST(
   const { error } = await supabase
     .from('group_session')
     .upsert({
-      session_type: body.sessionType || 'default',
-      meeting_id: id,
+      session_id: id,
       participant_id: body.participantId,
       participant_name: body.name,
-      // Removed status: body.status to avoid DB error based on your schema
+      status: body.status,
       total_checks: body.totalChecks ?? 0,
       distracted_checks: body.distractedChecks ?? 0,
       peak_distraction_pct: body.peakDistractionPct ?? 0,
       peak_distraction_time: body.peakDistractionTime
         ? new Date(body.peakDistractionTime).toISOString()
         : null,
-      created_at: new Date().toISOString(),
-    }, { onConflict: 'meeting_id,participant_id' })
+    }, { onConflict: 'session_id,participant_id' })
 
   if (error) console.error('[group_session POST]', error)
   return NextResponse.json({ ok: !error })
@@ -105,7 +96,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('group_session')
       .delete()
-      .eq('meeting_id', id)
+      .eq('session_id', id)
       .eq('participant_id', participantId)
 
     if (error) console.error('[group_session DELETE]', error)
