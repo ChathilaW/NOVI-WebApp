@@ -106,6 +106,30 @@ export async function GET(
 
     console.log(`[Excel Gen] Successfully uploaded report to Supabase: ${fileName}`);
 
+    // Insert metadata into the 'report' table
+    const now = new Date();
+    // Extract YYYY-MM-DD
+    const generatedDate = now.toISOString().split('T')[0];
+    // Extract HH:MM:SS
+    const generatedTime = now.toTimeString().split(' ')[0];
+
+    const { error: dbError } = await supabase
+      .from('report')
+      .insert({
+        session_id: sessionId,
+        file_name: fileName,
+        generated_date: generatedDate,
+        generated_time: generatedTime
+      });
+
+    if (dbError) {
+      console.error('[Excel Gen] Error saving report metadata:', dbError);
+      return NextResponse.json(
+        { ok: false, error: `Metadata save failed: ${dbError.message}` },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ 
       ok: true, 
       message: 'Excel report generated and securely saved to Supabase',
