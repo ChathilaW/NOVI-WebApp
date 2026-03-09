@@ -28,7 +28,7 @@ const EndCallButton = () => {
         await call.endCall();
         
         // Trigger the CSV report generation silently in the background
-        fetch(`/api/meeting/${call.id}/report-gen`).catch(err => {
+        fetch(`/api/meeting/${call.id}/group-report-gen`).catch(err => {
             console.error('[CSV Gen trigger error]', err);
         });
         
