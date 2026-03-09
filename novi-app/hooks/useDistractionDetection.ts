@@ -190,21 +190,6 @@ const useDistractionDetection = ({
               peakDistractionTime: peakDistractionTimeRef.current,
             }),
           }).catch(() => {})
-
-          // Send data to group_session as well
-          fetch(`/api/meeting/${meetingId}/group-session`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              participantId,
-              name,
-              status,
-              totalChecks: total,
-              distractedChecks: distracted,
-              peakDistractionPct: peakDistractionPctRef.current,
-              peakDistractionTime: peakDistractionTimeRef.current,
-            }),
-          }).catch(() => {})
         }
       }
 
