@@ -106,12 +106,26 @@ export async function GET(
 
     console.log(`[Excel Gen] Successfully uploaded report to Supabase: ${fileName}`);
 
-    // Insert metadata into the 'report' table
+    // Insert metadata into the 'report' table using the correct local timezone (+05:30)
     const now = new Date();
-    // Extract YYYY-MM-DD
-    const generatedDate = now.toISOString().split('T')[0];
-    // Extract HH:MM:SS
-    const generatedTime = now.toTimeString().split(' ')[0];
+    
+    // Extract YYYY-MM-DD in the local timezone (Asia/Colombo / +05:30)
+    const dateFormatter = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Colombo', 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    });
+    const generatedDate = dateFormatter.format(now);
+
+    // Extract HH:MM:SS in the local timezone
+    const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Colombo',
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit'
+    });
+    const generatedTime = timeFormatter.format(now);
 
     const { error: dbError } = await supabase
       .from('report')
