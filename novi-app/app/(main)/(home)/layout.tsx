@@ -15,7 +15,7 @@ const HomeLayout = async ({
             <section className="flex min-h-screen 
             flex-1 flex-col px-6 pb-6 pt-28 
             max-md:pb-14 sm:px-14">
-                  <div className="w-full">          
+                  <div className="w-full flex flex-col flex-1 pb-8">          
                     {children}
                   </div>
               </section>
