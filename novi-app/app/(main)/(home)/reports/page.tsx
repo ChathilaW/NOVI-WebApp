@@ -9,17 +9,7 @@ const ReportsPage = () => {
 
     if (selectedRole) {
         return (
-            <section className="flex w-full flex-1 flex-col gap-6 pt-10 text-white animate-fade-in px-4 md:px-8 pb-8">
-                <div className="flex justify-start z-10 relative">
-                    <button 
-                        onClick={() => setSelectedRole(null)}
-                        className="text-sm text-zinc-400 hover:text-white transition-colors flex items-center gap-2 bg-zinc-900 px-4 py-2 rounded-lg border border-zinc-800"
-                    >
-                        &larr; Back to Role Selection
-                    </button>
-                </div>
-                <ReportDashboard role={selectedRole} />
-            </section>
+            <ReportDashboard role={selectedRole} onBack={() => setSelectedRole(null)} />
         )
     }
 
