@@ -137,6 +137,7 @@ export async function GET(
     const { error: dbError } = await supabase
       .from('report')
       .insert({
+        host_id: userId,
         session_id: sessionId,
         file_name: fileName,
         generated_date: generatedDate,
