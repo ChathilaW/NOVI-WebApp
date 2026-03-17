@@ -7,8 +7,7 @@ interface SummaryBoardProps {
 
 interface DistractionRecord {
     participant_name: string;
-    peak_distraction_pct: number;
-    peak_distraction_time: string;
+    distraction_percentage: number;
 }
 
 export default function SummaryBoard({ role }: SummaryBoardProps) {
@@ -73,7 +72,7 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
 
                         <div className="flex flex-col">
                             <div className="bg-[#dbdbdb] w-max px-4 py-2 rounded-t-lg flex items-center gap-2">
-                                <span>Peak Distraction Pct: &gt;</span>
+                                <span>Distraction percentage: &gt;</span>
                                 <input 
                                     type="number" 
                                     value={threshold}
@@ -89,14 +88,13 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
                                     <div className="text-zinc-600">
                                         {threshold === '' 
                                             ? "Please enter a percentage." 
-                                            : `No peak distractions > ${threshold}% recorded today.`}
+                                            : `No distraction percentages > ${threshold}% recorded today.`}
                                     </div>
                                 )}
                                 {!loading && distractions.map((d, i) => (
                                     <div key={i} className="bg-[#f58ffc] p-4 rounded-lg">
                                         <div>Name: {d.participant_name}</div>
-                                        <div>Peak distraction pct: {Math.round(d.peak_distraction_pct)}%</div>
-                                        <div>Time: {new Date(d.peak_distraction_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                        <div>Distraction percentage: {Math.round(d.distraction_percentage)}%</div>
                                     </div>
                                 ))}
                             </div>

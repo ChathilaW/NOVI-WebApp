@@ -7,17 +7,30 @@ export async function GET(req: NextRequest) {
     const thresholdParam = req.nextUrl.searchParams.get('threshold');
     const threshold = thresholdParam ? parseInt(thresholdParam, 10) : 75;
 
-    // Fetch the highly distracted users
-    const { data: distractionsData, error: distError } = await supabase
+    // Fetch the raw check counts and related columns
+    const { data: rawData, error: distError } = await supabase
       .from('group_session')
-      .select('participant_name, peak_distraction_pct, peak_distraction_time')
-      .gt('peak_distraction_pct', threshold)
+      .select('participant_name, total_checks, distracted_checks')
       .order('peak_distraction_time', { ascending: false });
 
     if (distError) {
       console.error('[Summary API] Error fetching distractions:', distError);
       return NextResponse.json({ ok: false, error: distError.message }, { status: 500 });
     }
+
+    // Calculate percentage and filter based on threshold
+    const distractionsData = (rawData || [])
+      .map(row => {
+        let pct = 0;
+        if (row.total_checks && row.total_checks > 0) {
+          pct = (row.distracted_checks / row.total_checks) * 100;
+        }
+        return {
+          participant_name: row.participant_name,
+          distraction_percentage: pct
+        };
+      })
+      .filter(row => row.distraction_percentage > threshold);
 
     // Fetch the latest session time to display date even if distractions are empty
     const { data: sessionData, error: sessionError } = await supabase
