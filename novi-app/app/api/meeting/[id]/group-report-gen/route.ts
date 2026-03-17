@@ -1,26 +1,19 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
-import { auth } from '@clerk/nextjs/server';
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id: sessionId } = await params;
 
     // Fetch all group session data for this meeting
     const { data: participants, error } = await supabase
       .from('group_session')
       .select('*')
-      .eq('session_id', sessionId)
-      .eq('host_id', userId); // <-- Here: Ensures the exported data belongs only to the teacher requesting it
+      .eq('session_id', sessionId);
 
     if (error) {
       console.error('[Excel Gen] Error fetching group session data:', error);
@@ -137,7 +130,6 @@ export async function GET(
     const { error: dbError } = await supabase
       .from('report')
       .insert({
-        host_id: userId,
         session_id: sessionId,
         file_name: fileName,
         generated_date: generatedDate,

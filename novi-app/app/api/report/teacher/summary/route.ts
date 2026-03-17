@@ -1,13 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { auth } from '@clerk/nextjs/server';
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
     // Parse threshold from query params
     const thresholdParam = req.nextUrl.searchParams.get('threshold');
     const threshold = thresholdParam ? parseInt(thresholdParam, 10) : 75;
@@ -20,7 +15,6 @@ export async function GET(req: NextRequest) {
     const { data: rawData, error: distError } = await supabase
       .from('group_session')
       .select('participant_name, total_checks, distracted_checks')
-      .eq('host_id', userId) // <-- Here: Compares the host_id in the table with the currently logged-in user's Clerk ID
       .order('peak_distraction_time', { ascending: false });
 
     if (distError) {
@@ -55,7 +49,6 @@ export async function GET(req: NextRequest) {
     const { data: sessionData, error: sessionError } = await supabase
         .from('group_session')
         .select('peak_distraction_time')
-        .eq('host_id', userId) // <-- And here: Same filter for finding the latest session date
         .order('peak_distraction_time', { ascending: false })
         .limit(1);
 

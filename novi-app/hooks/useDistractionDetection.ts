@@ -8,7 +8,6 @@ interface UseDistractionDetectionOptions {
   participantId: string
   name: string
   isCameraOn: boolean
-  hostId?: string | null
 }
 
 /**
@@ -30,7 +29,6 @@ const useDistractionDetection = ({
   participantId,
   name,
   isCameraOn,
-  hostId,
 }: UseDistractionDetectionOptions) => {
   // Exposed state so consumers can render the participant's own dashboard
   const [stats, setStats] = useState<any>(null)
@@ -205,7 +203,6 @@ const useDistractionDetection = ({
               distractedChecks: distracted,
               peakDistractionPct: peakDistractionPctRef.current,
               peakDistractionTime: peakDistractionTimeRef.current,
-              hostId,
             }),
           }).catch(() => {})
         }
@@ -219,7 +216,7 @@ const useDistractionDetection = ({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [isCameraOn, meetingId, participantId, name, hostId])
+  }, [isCameraOn, meetingId, participantId, name])
 
   return { stats, focusedCount, totalCount }
 }

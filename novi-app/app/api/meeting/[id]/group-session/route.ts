@@ -63,7 +63,6 @@ export async function POST(
     distractedChecks: number
     peakDistractionPct: number
     peakDistractionTime: number
-    hostId?: string | null
   }
 
   // Check if participant already exists without relying on composite primary keys for upsert
@@ -81,7 +80,6 @@ export async function POST(
 
   const payload = {
     session_id: id,
-    host_id: body.hostId || null,
     participant_id: body.participantId,
     participant_name: body.name,
     status: body.status,
