@@ -1,13 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Parse threshold from query params
+    const thresholdParam = req.nextUrl.searchParams.get('threshold');
+    const threshold = thresholdParam ? parseInt(thresholdParam, 10) : 75;
+
     // Fetch the highly distracted users
     const { data: distractionsData, error: distError } = await supabase
       .from('group_session')
       .select('participant_name, peak_distraction_pct, peak_distraction_time')
-      .gt('peak_distraction_pct', 40)
+      .gt('peak_distraction_pct', threshold)
       .order('peak_distraction_time', { ascending: false });
 
     if (distError) {
