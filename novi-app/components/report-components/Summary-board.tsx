@@ -14,6 +14,7 @@ interface DistractionRecord {
 export default function SummaryBoard({ role }: SummaryBoardProps) {
     const [distractions, setDistractions] = useState<DistractionRecord[]>([]);
     const [loading, setLoading] = useState(false);
+    const [sessionDate, setSessionDate] = useState<string | null>(null);
 
     useEffect(() => {
         if (role === 'teacher') {
@@ -23,7 +24,10 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
                     const res = await fetch('/api/report/teacher/summary');
                     const json = await res.json();
                     if (json.ok) {
-                        setDistractions(json.data || []);
+                        setDistractions(json.data.distractions || []);
+                        if (json.data.sessionDate) {
+                            setSessionDate(new Date(json.data.sessionDate).toLocaleDateString());
+                        }
                     }
                 } catch (err) {
                     console.error('Failed to fetch distractions', err);
@@ -55,8 +59,13 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
                     <h2 className="text-2xl font-semibold mb-4 text-[#d89cf2]">Teacher Summary</h2>
                     <p className="text-zinc-400 text-lg">A quick overview of your classes' performance and aggregated metrics.</p>
                     <div className="mt-8 text-black text-base max-w-4xl">
-                        <div className="bg-[#dbdbdb] w-64 px-4 py-2 rounded-lg mb-6">
-                            Date: {new Date().toLocaleDateString()}
+                        <div className="bg-[#dbdbdb] w-64 px-4 py-2 rounded-lg mb-6 flex gap-1">
+                            <span>Date:</span>
+                            {sessionDate && (
+                                <span className="text-[#00518f] font-medium">
+                                    {sessionDate}
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex flex-col">
