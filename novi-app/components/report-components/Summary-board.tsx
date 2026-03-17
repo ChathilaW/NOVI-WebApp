@@ -15,6 +15,7 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
     const [loading, setLoading] = useState(false);
     const [sessionDate, setSessionDate] = useState<string | null>(null);
     const [threshold, setThreshold] = useState<string>('75');
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
     useEffect(() => {
         if (role === 'teacher') {
@@ -23,7 +24,7 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
                 try {
                     // Default to 75 if the user completely clears the input
                     const currentThreshold = threshold === '' ? 75 : Number(threshold);
-                    const res = await fetch(`/api/report/teacher/summary?threshold=${currentThreshold}`);
+                    const res = await fetch(`/api/report/teacher/summary?threshold=${currentThreshold}&sort=${sortOrder}`);
                     const json = await res.json();
                     if (json.ok) {
                         setDistractions(json.data.distractions || []);
@@ -39,7 +40,7 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
             };
             fetchDistractions();
         }
-    }, [role, threshold]);
+    }, [role, threshold, sortOrder]);
     return (
         <div className="flex flex-col flex-1 animate-fade-in">
             {role === 'individual' ? (
@@ -71,16 +72,29 @@ export default function SummaryBoard({ role }: SummaryBoardProps) {
                         </div>
 
                         <div className="flex flex-col">
-                            <div className="bg-[#dbdbdb] w-max px-4 py-2 rounded-t-lg flex items-center gap-2">
-                                <span>Distraction percentage: &gt;</span>
-                                <input 
-                                    type="number" 
-                                    value={threshold}
-                                    onChange={(e) => setThreshold(e.target.value)}
-                                    className="w-16 h-7 px-2 rounded-md border border-zinc-400 focus:outline-[#d89cf2] bg-white text-black text-center"
-                                    min="0"
-                                    max="100"
-                                />
+                            <div className="bg-[#dbdbdb] w-max px-4 py-2 rounded-t-lg flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span>Distraction percentage: &gt;</span>
+                                    <input 
+                                        type="number" 
+                                        value={threshold}
+                                        onChange={(e) => setThreshold(e.target.value)}
+                                        className="w-16 h-7 px-2 rounded-md border border-zinc-400 focus:outline-[#d89cf2] bg-white text-black text-center"
+                                        min="0"
+                                        max="100"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span>Sort:</span>
+                                    <select
+                                        value={sortOrder}
+                                        onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                                        className="h-7 px-2 rounded-md border border-zinc-400 focus:outline-[#d89cf2] bg-white text-black text-sm"
+                                    >
+                                        <option value="desc">Highest First</option>
+                                        <option value="asc">Lowest First</option>
+                                    </select>
+                                </div>
                             </div>
                             <div className="bg-[#dbdbdb] p-4 sm:p-6 rounded-b-lg rounded-tr-lg flex flex-col gap-4 min-h-[150px]">
                                 {loading && <div className="text-zinc-600 animate-pulse">Loading data...</div>}

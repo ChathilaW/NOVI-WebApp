@@ -7,7 +7,11 @@ export async function GET(req: NextRequest) {
     const thresholdParam = req.nextUrl.searchParams.get('threshold');
     const threshold = thresholdParam ? parseInt(thresholdParam, 10) : 75;
 
-    // Fetch the raw check counts and related columns
+    // Parse sorting order from query params
+    const sortOrderParam = req.nextUrl.searchParams.get('sort');
+    const isAscending = sortOrderParam === 'asc';
+
+    // Fetch the raw check counts and related columns from group_session
     const { data: rawData, error: distError } = await supabase
       .from('group_session')
       .select('participant_name, total_checks, distracted_checks')
@@ -31,6 +35,15 @@ export async function GET(req: NextRequest) {
         };
       })
       .filter(row => row.distraction_percentage > threshold);
+
+    // Sort by calculated percentage
+    distractionsData.sort((a, b) => {
+        if (isAscending) {
+            return a.distraction_percentage - b.distraction_percentage;
+        } else {
+            return b.distraction_percentage - a.distraction_percentage;
+        }
+    });
 
     // Fetch the latest session time to display date even if distractions are empty
     const { data: sessionData, error: sessionError } = await supabase
