@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { auth } from '@clerk/nextjs/server';
 
 export async function DELETE() {
   try {
-    // Delete all rows from the group_session table. 
-    // Supabase requires at least one filter for a delete operation, 
-    // so we use a condition that is always true (session_id is not empty).
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Delete all rows from the group_session table that belong to the current host
     const { error } = await supabase
       .from('group_session')
       .delete()
-      .neq('session_id', 'dummy_value_to_trigger_delete_all');
+      .eq('host_id', userId); // <-- Here: Only deletes rows where the group_session's host_id matches the active user's Clerk ID
 
     if (error) {
       console.error('[DB Cleanup] Error wiping group_session table:', error);

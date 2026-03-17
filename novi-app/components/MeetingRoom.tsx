@@ -83,6 +83,7 @@ const MeetingRoom = () => {
     participantId: user?.id ?? "",                       // Clerk user ID, falling back to empty string
     name: user?.fullName ?? user?.username ?? "Unknown", // Display name for the dashboard
     isCameraOn: !isCameraOff,                            // Only process frames when camera is active
+    hostId: call.state.createdBy?.id,                    // The meeting creator's Clerk ID
   });
 
   if (!user) return null;
