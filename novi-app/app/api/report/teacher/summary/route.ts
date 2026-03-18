@@ -11,10 +11,55 @@ export async function GET(req: NextRequest) {
     const sortOrderParam = req.nextUrl.searchParams.get('sort');
     const isAscending = sortOrderParam === 'asc';
 
-    // Fetch the raw check counts and related columns from group_session
+    // Parse host_id from query params
+    const host_id = req.nextUrl.searchParams.get('host_id');
+
+    // Check whether the current logged-in user's userid is provided
+    if (!host_id) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized: No host_id provided' }, { status: 401 });
+    }
+
+    // Step 1 & 2: Query host_meetings for the latest meeting_id for this host_id
+    const { data: hostMatches, error: hostError } = await supabase
+      .from('host_meetings')
+      .select('meeting_id')
+      .eq('host_id', host_id)
+      .order('date_time', { ascending: false })
+      .limit(1);
+
+    if (hostError) {
+      console.error('[Summary API] Error querying host_meetings for latest session:', hostError);
+      return NextResponse.json({ ok: false, error: hostError.message }, { status: 500 });
+    }
+
+    // If there're no matches, don't GET any rows in group_session table
+    if (!hostMatches || hostMatches.length === 0) {
+      return NextResponse.json({ 
+        ok: true, 
+        data: {
+            distractions: [],
+            sessionDate: null
+        } 
+      });
+    }
+
+    const latestMeetingId = hostMatches[0].meeting_id;
+
+    if (!latestMeetingId) {
+      return NextResponse.json({ 
+        ok: true, 
+        data: {
+            distractions: [],
+            sessionDate: null
+        } 
+      });
+    }
+
+    // Step 3: Fetch the raw check counts and related columns from group_session explicitly checked against the newest session_id
     const { data: rawData, error: distError } = await supabase
       .from('group_session')
       .select('participant_name, total_checks, distracted_checks')
+      .eq('session_id', latestMeetingId)
       .order('peak_distraction_time', { ascending: false });
 
     if (distError) {
@@ -45,10 +90,11 @@ export async function GET(req: NextRequest) {
         }
     });
 
-    // Fetch the latest session time to display date even if distractions are empty
+    // Fetch the latest session time to display date even if distractions are empty (Filtered safely by session_id)
     const { data: sessionData, error: sessionError } = await supabase
         .from('group_session')
         .select('peak_distraction_time')
+        .eq('session_id', latestMeetingId)
         .order('peak_distraction_time', { ascending: false })
         .limit(1);
 
