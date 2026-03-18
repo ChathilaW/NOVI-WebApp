@@ -60,7 +60,22 @@ const MainMenu = () => {
             })
             
 
-            // Store the meeting metadata (host_id, meeting_id, and date_time) in Supabase
+            if (meetingState === 'Instant') {
+                // Wipe the previous meeting's group_session data before logging the new one
+                try {
+                    await fetch('/api/meeting/group-cleanup', { 
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ host_id: user.id }),
+                    });
+                } catch (err) {
+                    console.error('[DB Cleanup] Failed to trigger cleanup', err);
+                }
+            }
+            
+            // Store the CURRENT meeting metadata (host_id, meeting_id, and date_time) in Supabase
             try {
                 await fetch('/api/meeting/meta-data', {
                     method: 'POST',
@@ -79,19 +94,6 @@ const MainMenu = () => {
 
 
             if (meetingState === 'Instant') {
-                // Wipe the group_session database table for the new meeting session
-                try {
-                    await fetch('/api/meeting/group-cleanup', { 
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ host_id: user.id }),
-                    });
-                } catch (err) {
-                    console.error('[DB Cleanup] Failed to trigger cleanup', err);
-                }
-
                 router.push(`/meeting/${call.id}`);
                 toast('Setting up your meeting',{
                     duration: 3000,
