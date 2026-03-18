@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { auth } from '@clerk/nextjs/server';
 
-export async function DELETE() {
+export async function DELETE(req: Request) {
   try {
-    // Authenticate the user natively to prevent unauthorized wipes
-    const { userId } = await auth();
+    // Receive the user.id generated explicitly by useUser() from the frontend
+    const body = await req.json();
+    const { host_id } = body;
 
-    if (!userId) {
+    if (!host_id) {
       return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -15,7 +15,7 @@ export async function DELETE() {
     const { data: hostMatches, error: hostError } = await supabase
       .from('host_meetings')
       .select('meeting_id')
-      .eq('host_id', userId)
+      .eq('host_id', host_id)
       .order('date_time', { ascending: false })
       .limit(1);
 

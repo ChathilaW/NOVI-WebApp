@@ -81,7 +81,13 @@ const MainMenu = () => {
             if (meetingState === 'Instant') {
                 // Wipe the group_session database table for the new meeting session
                 try {
-                    await fetch('/api/meeting/group-cleanup', { method: 'DELETE' });
+                    await fetch('/api/meeting/group-cleanup', { 
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ host_id: user.id }),
+                    });
                 } catch (err) {
                     console.error('[DB Cleanup] Failed to trigger cleanup', err);
                 }
