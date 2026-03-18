@@ -60,14 +60,18 @@ const MainMenu = () => {
             })
             
 
-            // Store the meeting metadata (host_id and meeting_id) in Supabase
+            // Store the meeting metadata (host_id, meeting_id, and date_time) in Supabase
             try {
                 await fetch('/api/meeting/meta-data', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ host_id: user.id, meeting_id: call.id }),
+                    body: JSON.stringify({ 
+                        host_id: user.id, 
+                        meeting_id: call.id,
+                        date_time: new Date().toISOString()
+                    }),
                 });
             } catch (err) {
                 console.error('[DB Meeting Meta-data] Failed to store meeting metadata', err);
