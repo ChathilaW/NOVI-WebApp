@@ -58,6 +58,21 @@ const MainMenu = () => {
             await call.updateCallMembers({
                 update_members: [{ user_id: user.id }],
             })
+            
+
+            // Store the meeting metadata (host_id and meeting_id) in Supabase
+            try {
+                await fetch('/api/meeting/meta-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ host_id: user.id, meeting_id: call.id }),
+                });
+            } catch (err) {
+                console.error('[DB Meeting Meta-data] Failed to store meeting metadata', err);
+            }
+
 
             if (meetingState === 'Instant') {
                 // Wipe the group_session database table for the new meeting session
